@@ -6,3 +6,6 @@ __pycache__/
 .tmp/
 .deps/
 .DS_Store
+output/deal_analysis_*.json
+output/deal_analysis_*.xlsx
+output/deal_analysis_*_memo.md

@@ -47,6 +47,21 @@ class SignalSet(BaseModel):
     risk_flags: List[str]
 
 
+class DataQuality(BaseModel):
+    score: float
+    checks: Dict[str, Any]
+    issues: List[str]
+
+
+class ValuationScenarioSummary(BaseModel):
+    scenario_count: int
+    implied_ev_low: Optional[float] = None
+    implied_ev_base: Optional[float] = None
+    implied_ev_high: Optional[float] = None
+    current_ev: Optional[float] = None
+    gap_to_base: Optional[float] = None
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -69,5 +84,8 @@ class FinalReport(BaseModel):
     comparable_analysis: ComparableAnalysis
     precedent_transactions: PrecedentAnalysis
     signals: SignalSet
+    data_quality: DataQuality
+    valuation_scenarios: ValuationScenarioSummary
     insights: InsightSet
+    diagnostics: Dict[str, Any]
     conclusion: str

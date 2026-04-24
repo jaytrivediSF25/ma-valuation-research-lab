@@ -1,0 +1,137 @@
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List
+
+import pandas as pd
+
+from .config import PipelineConfig
+
+
+def _fmt_money(value: Any) -> str:
+    if value is None:
+        return "n/a"
+    try:
+        if pd.isna(value):
+            return "n/a"
+    except Exception:
+        pass
+    try:
+        return f"${float(value):,.0f}"
+    except Exception:
+        return "n/a"
+
+
+def _fmt_pct(value: Any) -> str:
+    if value is None:
+        return "n/a"
+    try:
+        if pd.isna(value):
+            return "n/a"
+    except Exception:
+        pass
+    try:
+        return f"{100.0 * float(value):.1f}%"
+    except Exception:
+        return "n/a"
+
+
+def _fmt_mult(value: Any) -> str:
+    if value is None:
+        return "n/a"
+    try:
+        if pd.isna(value):
+            return "n/a"
+    except Exception:
+        pass
+    try:
+        return f"{float(value):.2f}x"
+    except Exception:
+        return "n/a"
+
+
+def build_markdown_memo(
+    config: PipelineConfig,
+    structured_report: Dict[str, Any],
+    diagnostics: Dict[str, Any],
+) -> Path:
+    company = structured_report["company"]
+    financials = structured_report["financials"]
+    comps = structured_report["comparable_analysis"]
+    precedents = structured_report["precedent_transactions"]
+    signals = structured_report["signals"]
+    insights = structured_report["insights"]
+    quality = structured_report.get("data_quality", {})
+    scenarios = structured_report.get("valuation_scenarios", {})
+
+    lines: List[str] = []
+    lines.append(f"# Deal Analysis Memo: {company.get('name') or company.get('ticker')}")
+    lines.append("")
+    lines.append(
+        f"_Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')} | "
+        f"Target: {company.get('ticker')} | CIK: {company.get('cik')}_"
+    )
+    lines.append("")
+    lines.append("## Executive Conclusion")
+    lines.append("")
+    lines.append(f"- **Conclusion**: {insights.get('conclusion')}")
+    lines.append(f"- **Primary Risk**: {insights.get('primary_risk')}")
+    lines.append(f"- **Valuation Signal**: {signals.get('valuation_position')}")
+    lines.append(f"- **Precedent Positioning**: {signals.get('precedent_comparison')}")
+    lines.append("")
+    lines.append("## Financial Snapshot")
+    lines.append("")
+    lines.append(f"- Revenue: {_fmt_money(financials.get('revenue'))}")
+    lines.append(f"- Revenue Growth (YoY): {_fmt_pct(financials.get('revenue_growth_yoy'))}")
+    lines.append(f"- EBITDA: {_fmt_money(financials.get('ebitda'))}")
+    lines.append(f"- EBITDA Margin: {_fmt_pct(financials.get('ebitda_margin'))}")
+    lines.append(f"- Enterprise Value: {_fmt_money(financials.get('enterprise_value'))}")
+    lines.append(f"- EV/Revenue: {_fmt_mult(financials.get('ev_revenue'))}")
+    lines.append(f"- EV/EBITDA: {_fmt_mult(financials.get('ev_ebitda'))}")
+    lines.append("")
+    lines.append("## Comparable Company Analysis")
+    lines.append("")
+    lines.append(f"- Peer count: {comps.get('peer_count')}")
+    lines.append(f"- Peer median EV/Revenue: {_fmt_mult(comps.get('peer_median_ev_revenue'))}")
+    lines.append(f"- Peer median EV/EBITDA: {_fmt_mult(comps.get('peer_median_ev_ebitda'))}")
+    lines.append(f"- Target EV/Revenue percentile: {_fmt_pct(comps.get('percentile_ev_revenue'))}")
+    lines.append(f"- Target EV/EBITDA percentile: {_fmt_pct(comps.get('percentile_ev_ebitda'))}")
+    lines.append("")
+    lines.append("## Precedent Transaction Analysis")
+    lines.append("")
+    lines.append(f"- Transaction count: {precedents.get('transaction_count')}")
+    lines.append(f"- Median EV/Revenue: {_fmt_mult(precedents.get('median_ev_revenue'))}")
+    lines.append(f"- Median EV/EBITDA: {_fmt_mult(precedents.get('median_ev_ebitda'))}")
+    lines.append(f"- Implied valuation range: {_fmt_money(precedents.get('valuation_range_low'))} to {_fmt_money(precedents.get('valuation_range_high'))}")
+    lines.append("")
+    lines.append("## Valuation Scenarios")
+    lines.append("")
+    lines.append(f"- Scenario count: {scenarios.get('scenario_count')}")
+    lines.append(f"- Implied EV low/base/high: {_fmt_money(scenarios.get('implied_ev_low'))} / {_fmt_money(scenarios.get('implied_ev_base'))} / {_fmt_money(scenarios.get('implied_ev_high'))}")
+    lines.append(f"- Gap to base case vs current EV: {_fmt_pct(scenarios.get('gap_to_base'))}")
+    lines.append("")
+    lines.append("## Data Quality")
+    lines.append("")
+    lines.append(f"- Data quality score: {quality.get('score', 'n/a')}")
+    issue_list = quality.get("issues", [])
+    if issue_list:
+        lines.append("- Quality issues:")
+        for issue in issue_list:
+            lines.append(f"  - {issue}")
+    else:
+        lines.append("- Quality issues: none")
+    lines.append("")
+    lines.append("## Key Insights")
+    lines.append("")
+    for idx, text in enumerate(insights.get("key_insights", []), start=1):
+        lines.append(f"{idx}. {text}")
+    lines.append("")
+    lines.append("## Pipeline Diagnostics")
+    lines.append("")
+    for key, value in diagnostics.items():
+        lines.append(f"- {key}: {value}")
+    lines.append("")
+
+    memo_name = f"deal_analysis_{(company.get('ticker') or 'target').upper()}_memo.md"
+    memo_path = config.output_dir / memo_name
+    memo_path.write_text("\n".join(lines), encoding="utf-8")
+    return memo_path

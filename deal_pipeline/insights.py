@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
+from .config import PipelineConfig
 from .schemas import InsightSet
 
 
@@ -11,7 +12,17 @@ def generate_signals(
     target_row: pd.Series,
     comps_summary: Dict[str, Optional[float]],
     precedents_summary: Dict[str, Optional[float]],
+    config: Optional[PipelineConfig] = None,
 ) -> Dict[str, Any]:
+    low_growth_threshold = config.low_growth_threshold if config else 0.03
+    high_growth_threshold = config.high_growth_threshold if config else 0.15
+    weak_margin_threshold = config.weak_margin_threshold if config else 0.12
+    strong_margin_threshold = config.strong_margin_threshold if config else 0.25
+    premium_multiple_buffer = config.premium_multiple_buffer if config else 0.15
+    discounted_multiple_buffer = config.discounted_multiple_buffer if config else 0.15
+    min_peer_count = config.min_peer_count if config else 5
+    min_precedent_count = config.min_precedent_count if config else 5
+
     growth = target_row.get("revenue_growth_yoy")
     margin = target_row.get("ebitda_margin")
     target_ev_rev = target_row.get("ev_revenue")
@@ -22,27 +33,27 @@ def generate_signals(
 
     if growth is None or pd.isna(growth):
         growth_profile = "medium"
-    elif growth >= 0.15:
+    elif growth >= high_growth_threshold:
         growth_profile = "high"
-    elif growth >= 0.03:
+    elif growth >= low_growth_threshold:
         growth_profile = "medium"
     else:
         growth_profile = "low"
 
     if margin is None or pd.isna(margin):
         margin_profile = "average"
-    elif margin >= 0.25:
+    elif margin >= strong_margin_threshold:
         margin_profile = "strong"
-    elif margin >= 0.12:
+    elif margin >= weak_margin_threshold:
         margin_profile = "average"
     else:
         margin_profile = "weak"
 
     if target_ev_rev is None or pd.isna(target_ev_rev) or peer_median_ev_rev is None or pd.isna(peer_median_ev_rev):
         valuation_position = "fair"
-    elif target_ev_rev >= peer_median_ev_rev * 1.15:
+    elif target_ev_rev >= peer_median_ev_rev * (1.0 + premium_multiple_buffer):
         valuation_position = "premium"
-    elif target_ev_rev <= peer_median_ev_rev * 0.85:
+    elif target_ev_rev <= peer_median_ev_rev * (1.0 - discounted_multiple_buffer):
         valuation_position = "discounted"
     else:
         valuation_position = "fair"
@@ -63,9 +74,9 @@ def generate_signals(
         risk_flags.append("negative_ebitda")
     if growth_profile == "low":
         risk_flags.append("subscale_growth")
-    if comps_summary.get("peer_count", 0) < 5:
+    if comps_summary.get("peer_count", 0) < min_peer_count:
         risk_flags.append("thin_peer_set")
-    if precedents_summary.get("transaction_count", 0) < 5:
+    if precedents_summary.get("transaction_count", 0) < min_precedent_count:
         risk_flags.append("thin_precedent_set")
 
     return {

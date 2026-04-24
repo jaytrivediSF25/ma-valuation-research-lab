@@ -7,7 +7,15 @@ from typing import Any, Dict
 import pandas as pd
 
 from .config import PipelineConfig
-from .schemas import ComparableAnalysis, FinalReport, FinancialSnapshot, PrecedentAnalysis, SignalSet
+from .schemas import (
+    ComparableAnalysis,
+    DataQuality,
+    FinalReport,
+    FinancialSnapshot,
+    PrecedentAnalysis,
+    SignalSet,
+    ValuationScenarioSummary,
+)
 
 
 @dataclass
@@ -36,6 +44,8 @@ def _build_summary_sheet(
     comps_summary: Dict[str, Any],
     precedents_summary: Dict[str, Any],
     signals: Dict[str, Any],
+    data_quality: Dict[str, Any],
+    valuation_scenarios: Dict[str, Any],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -61,6 +71,13 @@ def _build_summary_sheet(
         ("valuation_position", signals.get("valuation_position")),
         ("precedent_comparison", signals.get("precedent_comparison")),
         ("risk_flags", ", ".join(signals.get("risk_flags", []))),
+        ("data_quality_score", data_quality.get("score")),
+        ("data_quality_issues", ", ".join(data_quality.get("issues", []))),
+        ("scenario_count", valuation_scenarios.get("scenario_count")),
+        ("implied_ev_low", valuation_scenarios.get("implied_ev_low")),
+        ("implied_ev_base", valuation_scenarios.get("implied_ev_base")),
+        ("implied_ev_high", valuation_scenarios.get("implied_ev_high")),
+        ("gap_to_base", valuation_scenarios.get("gap_to_base")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -75,10 +92,15 @@ def export_outputs(
     comps_summary: Dict[str, Any],
     precedents_summary: Dict[str, Any],
     signals: Dict[str, Any],
+    data_quality: Dict[str, Any],
+    valuation_scenarios: Dict[str, Any],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
+    scenario_table: pd.DataFrame,
+    quality_table: pd.DataFrame,
     raw_data_table: pd.DataFrame,
+    diagnostics: Dict[str, Any],
 ) -> ExportArtifacts:
     config.ensure_directories()
     ticker = str(target_row.get("ticker") or "target").upper()
@@ -100,6 +122,8 @@ def export_outputs(
     comparable_analysis = ComparableAnalysis(**comps_summary)
     precedent_analysis = PrecedentAnalysis(**precedents_summary)
     signal_set = SignalSet(**signals)
+    data_quality_set = DataQuality(**data_quality)
+    valuation_scenario_set = ValuationScenarioSummary(**valuation_scenarios)
 
     report = FinalReport(
         company={
@@ -112,7 +136,10 @@ def export_outputs(
         comparable_analysis=comparable_analysis,
         precedent_transactions=precedent_analysis,
         signals=signal_set,
+        data_quality=data_quality_set,
+        valuation_scenarios=valuation_scenario_set,
         insights=insights,
+        diagnostics=diagnostics,
         conclusion=insights["conclusion"],
     )
 
@@ -121,13 +148,23 @@ def export_outputs(
 
     report_json_path.write_text(json.dumps(report.model_dump(mode="json"), indent=2), encoding="utf-8")
 
-    summary_df = _build_summary_sheet(target_row, comps_summary, precedents_summary, signals, insights)
+    summary_df = _build_summary_sheet(
+        target_row=target_row,
+        comps_summary=comps_summary,
+        precedents_summary=precedents_summary,
+        signals=signals,
+        data_quality=data_quality,
+        valuation_scenarios=valuation_scenarios,
+        insights=insights,
+    )
     raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()
 
     with pd.ExcelWriter(workbook_path, engine="openpyxl") as writer:
         summary_df.to_excel(writer, index=False, sheet_name="summary")
         comps_table.to_excel(writer, index=False, sheet_name="comps")
         precedents_table.to_excel(writer, index=False, sheet_name="precedents")
+        scenario_table.to_excel(writer, index=False, sheet_name="scenarios")
+        quality_table.to_excel(writer, index=False, sheet_name="quality")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 
     return ExportArtifacts(
