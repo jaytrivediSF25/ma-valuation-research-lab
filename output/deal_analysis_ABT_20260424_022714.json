@@ -1,0 +1,60 @@
+{
+  "company": {
+    "name": "ABBOTT LABORATORIES",
+    "ticker": "ABT",
+    "cik": "0000001800",
+    "sector": null
+  },
+  "financials": {
+    "as_of_date": "2025-12-31 00:00:00",
+    "revenue": 44328000000.0,
+    "revenue_growth_yoy": 0.0566865315852205,
+    "ebitda": 9487000000.0,
+    "ebitda_margin": 0.2140182277567226,
+    "enterprise_value": 241879255381.0,
+    "ev_revenue": 5.456579484321422,
+    "ev_ebitda": 25.49586332676294,
+    "market_cap": 232169255381.0,
+    "total_debt": 25858000000.0,
+    "cash": 16148000000.0
+  },
+  "comparable_analysis": {
+    "peer_count": 0,
+    "peer_median_ev_revenue": null,
+    "peer_median_ev_ebitda": null,
+    "target_ev_revenue": 5.456579484321422,
+    "target_ev_ebitda": 25.49586332676294,
+    "percentile_ev_revenue": null,
+    "percentile_ev_ebitda": null
+  },
+  "precedent_transactions": {
+    "transaction_count": 1374,
+    "median_ev_revenue": 2.900861685096714,
+    "p25_ev_revenue": 2.1349913743530764,
+    "p75_ev_revenue": 6.6340829700626465,
+    "median_ev_ebitda": 37.324130407046475,
+    "p25_ev_ebitda": 17.593103475011567,
+    "p75_ev_ebitda": 68.43778801843318,
+    "valuation_range_low": 130772835154.87894,
+    "valuation_range_high": 471672462413.9063
+  },
+  "signals": {
+    "growth_profile": "medium",
+    "margin_profile": "average",
+    "valuation_position": "fair",
+    "precedent_comparison": "within",
+    "risk_flags": [
+      "thin_peer_set"
+    ]
+  },
+  "insights": {
+    "key_insights": [
+      "Revenue growth YoY is 5.7%, classified as medium growth.",
+      "Precedent sample includes 1374 transactions with median EV/EBITDA of 37.32x.",
+      "EBITDA margin is 21.4%, indicating a average margin profile."
+    ],
+    "primary_risk": "Thin peer set.",
+    "conclusion": "Overall profile is fair versus comps and within precedent valuation range."
+  },
+  "conclusion": "Overall profile is fair versus comps and within precedent valuation range."
+}
