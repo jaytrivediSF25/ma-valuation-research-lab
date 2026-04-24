@@ -3,7 +3,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from deal_pipeline.blended_valuation import build_blended_valuation
 from deal_pipeline.config import PipelineConfig
+from deal_pipeline.dcf import run_dcf_analysis
 from deal_pipeline.insights import generate_signals
 from deal_pipeline.quality import evaluate_data_quality
 from deal_pipeline.scenarios import build_valuation_scenarios
@@ -62,6 +64,37 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertGreaterEqual(scenarios.summary["scenario_count"], 6)
         self.assertIsNotNone(scenarios.summary["implied_ev_base"])
         self.assertFalse(scenarios.scenario_table.empty)
+
+    def test_dcf_runs_and_returns_cases(self) -> None:
+        config = PipelineConfig(data_dir=Path("."), output_dir=Path("./output"))
+        target = pd.Series(
+            {
+                "revenue": 1000.0,
+                "revenue_growth_yoy": 0.08,
+                "ebitda_margin": 0.22,
+                "enterprise_value": 4800.0,
+            }
+        )
+        dcf = run_dcf_analysis(target, config)
+        self.assertEqual(dcf.summary["case_count"], 3)
+        self.assertIsNotNone(dcf.summary["implied_ev_base"])
+        self.assertFalse(dcf.dcf_table.empty)
+        self.assertFalse(dcf.sensitivity_table.empty)
+
+    def test_blended_valuation(self) -> None:
+        config = PipelineConfig(data_dir=Path("."), output_dir=Path("./output"))
+        target = pd.Series({"revenue": 100.0, "ebitda": 25.0, "enterprise_value": 500.0})
+        blend = build_blended_valuation(
+            target_row=target,
+            comps_summary={"peer_median_ev_revenue": 4.0, "peer_median_ev_ebitda": 16.0},
+            precedents_summary={"valuation_range_low": 420.0, "valuation_range_high": 610.0},
+            scenarios_summary={"implied_ev_base": 560.0},
+            dcf_summary={"implied_ev_base": 540.0},
+            config=config,
+        )
+        self.assertIsNotNone(blend.summary["blended_implied_ev"])
+        self.assertIn(blend.summary["blend_stance"], {"upside", "neutral", "downside"})
+        self.assertEqual(len(blend.blend_table), 4)
 
 
 if __name__ == "__main__":

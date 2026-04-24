@@ -93,6 +93,9 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     comps = payload["comparable_analysis"]
     precedents = payload["precedent_transactions"]
     signals = payload["signals"]
+    dcf = payload.get("dcf_analysis", {})
+    blend = payload.get("blended_valuation", {})
+    robustness = payload.get("robustness", {})
 
     insights = []
     revenue_growth = financials.get("revenue_growth_yoy")
@@ -116,6 +119,15 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     ebitda_margin = financials.get("ebitda_margin")
     if ebitda_margin is not None:
         insights.append(f"EBITDA margin is {ebitda_margin:.1%}, indicating a {signals['margin_profile']} margin profile.")
+    dcf_gap = dcf.get("dcf_gap_to_current")
+    if dcf_gap is not None:
+        insights.append(f"DCF base case implies a {dcf_gap:+.1%} spread versus current enterprise value.")
+    blend_gap = blend.get("blend_gap_to_current")
+    if blend_gap is not None:
+        insights.append(f"Blended valuation synthesis indicates {blend_gap:+.1%} relative value versus current EV.")
+    zscore = robustness.get("target_ev_revenue_zscore")
+    if zscore is not None:
+        insights.append(f"Target EV/Revenue z-score versus comps is {zscore:+.2f}, informing statistical valuation stretch.")
 
     insights = [line for line in insights if line][:4]
     if len(insights) < 2:

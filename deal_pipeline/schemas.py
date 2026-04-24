@@ -62,6 +62,31 @@ class ValuationScenarioSummary(BaseModel):
     gap_to_base: Optional[float] = None
 
 
+class DCFSummary(BaseModel):
+    case_count: int
+    implied_ev_low: Optional[float] = None
+    implied_ev_base: Optional[float] = None
+    implied_ev_high: Optional[float] = None
+    current_ev: Optional[float] = None
+    dcf_gap_to_current: Optional[float] = None
+
+
+class RobustnessSummary(BaseModel):
+    comps_ev_revenue_ci_low: Optional[float] = None
+    comps_ev_revenue_ci_high: Optional[float] = None
+    comps_ev_ebitda_ci_low: Optional[float] = None
+    comps_ev_ebitda_ci_high: Optional[float] = None
+    target_ev_revenue_zscore: Optional[float] = None
+    target_ev_ebitda_zscore: Optional[float] = None
+
+
+class BlendedValuationSummary(BaseModel):
+    blended_implied_ev: Optional[float] = None
+    current_ev: Optional[float] = None
+    blend_gap_to_current: Optional[float] = None
+    blend_stance: str = "neutral"
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -86,6 +111,9 @@ class FinalReport(BaseModel):
     signals: SignalSet
     data_quality: DataQuality
     valuation_scenarios: ValuationScenarioSummary
+    dcf_analysis: DCFSummary
+    robustness: RobustnessSummary
+    blended_valuation: BlendedValuationSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str

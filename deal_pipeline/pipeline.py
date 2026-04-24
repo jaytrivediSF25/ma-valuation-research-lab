@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 from .analysis import run_comparable_analysis, run_precedent_analysis
+from .blended_valuation import build_blended_valuation
 from .config import PipelineConfig
+from .dcf import run_dcf_analysis
 from .export import ExportArtifacts, export_outputs
 from .feature_engineering import engineer_features, select_target_company
 from .ingestion import ingest_data
@@ -10,6 +12,7 @@ from .insights import generate_ai_insights, generate_signals
 from .memo import build_markdown_memo
 from .normalization import normalize_data
 from .quality import evaluate_data_quality
+from .robustness import compute_robustness_metrics
 from .scenarios import build_valuation_scenarios
 
 
@@ -33,6 +36,16 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
     signals = generate_signals(target_row, comps.summary, precedents.summary, config=config)
     quality = evaluate_data_quality(company_metrics, comps.summary, precedents.summary, config=config)
     scenarios = build_valuation_scenarios(target_row, comps.summary, precedents.summary)
+    dcf = run_dcf_analysis(target_row, config=config)
+    robustness = compute_robustness_metrics(comps.peer_table, precedents.precedent_table, target_row)
+    blended = build_blended_valuation(
+        target_row=target_row,
+        comps_summary=comps.summary,
+        precedents_summary=precedents.summary,
+        scenarios_summary=scenarios.summary,
+        dcf_summary=dcf.summary,
+        config=config,
+    )
 
     structured_payload = {
         "company": {
@@ -59,6 +72,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
             "issues": quality.issues,
         },
         "valuation_scenarios": scenarios.summary,
+        "dcf_analysis": dcf.summary,
+        "robustness": robustness.summary,
+        "blended_valuation": blended.summary,
     }
     insights = generate_ai_insights(structured_payload, config.openai_model)
 
@@ -73,6 +89,8 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "precedent_count_used": int(precedents.summary.get("transaction_count", 0)),
         "data_quality_score": quality.score,
         "valuation_scenario_count": int(scenarios.summary.get("scenario_count", 0)),
+        "dcf_case_count": int(dcf.summary.get("case_count", 0)),
+        "blend_stance": blended.summary.get("blend_stance"),
     }
 
     exports = export_outputs(
@@ -87,10 +105,17 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
             "issues": quality.issues,
         },
         valuation_scenarios=scenarios.summary,
+        dcf_summary=dcf.summary,
+        robustness_summary=robustness.summary,
+        blended_valuation_summary=blended.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
         scenario_table=scenarios.scenario_table,
+        dcf_table=dcf.dcf_table,
+        dcf_sensitivity_table=dcf.sensitivity_table,
+        robustness_table=robustness.robustness_table,
+        blend_table=blended.blend_table,
         quality_table=quality.check_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,

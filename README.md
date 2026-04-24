@@ -1,203 +1,357 @@
 # M&A Valuation Research Lab
 
-A production-grade, local-first **finance data science pipeline** for transforming fragmented SEC, market, and transaction data into valuation-ready M&A intelligence.
+A local, modular, production-style finance data science system for **deal screening, valuation triangulation, and structured investment reasoning**.
 
-This project is designed for analyst workflows that need:
+This repository turns fragmented SEC/regulatory and financial datasets into a reproducible M&A decision package with:
 
-- disciplined data engineering,
-- transparent valuation mechanics,
-- reproducible outputs,
-- and structured AI-assisted interpretation.
-
-No frontend. No dashboard. Pure analytical backend.
-
----
-
-## Investment Use Case
-
-The pipeline answers a core transaction question:
-
-**"Given available fundamentals, peers, and precedents, is the target trading/valued at a premium, fair value, or discount, and what are the key risks to conviction?"**
-
-The system produces decision-support artifacts suitable for:
-
-- internal IC prep,
-- banker valuation framing,
-- corp-dev screening,
-- PE diligence triage,
-- and repeatable model refreshes.
+- engineered financial metrics,
+- comparable company and precedent transaction analysis,
+- DCF and blended valuation synthesis,
+- statistical robustness diagnostics,
+- machine-readable + analyst-readable outputs.
 
 ---
 
-## Analytical Scope
+## 1. Design Principles
 
-### Inputs
-
-- SEC filing data (`S-4`, `8-K`, `10-K`, `10-Q`)
-- SEC company facts (XBRL concepts)
-- Optional external financial datasets
-- Optional peer datasets
-- Optional precedent transaction datasets
-
-Supported file formats:
-
-- `CSV`
-- `JSON`
-- `XLSX/XLS`
-
-### Core Outputs
-
-1. Canonical, cleaned analytical dataset.
-2. Comparable company analysis (peer medians, target percentile position).
-3. Precedent transaction analysis (distributional multiples, implied range).
-4. Structured signal layer (growth/margin/valuation/risk flags).
-5. AI reasoning layer over engineered metrics (strict JSON response contract).
-6. Export package:
-   - machine-readable JSON,
-   - finance-friendly Excel workbook,
-   - markdown investment memo.
+1. **Local-first reproducibility**: deterministic data processing with explicit config.
+2. **Finance-native outputs**: EV ranges, multiple distributions, implied valuation anchors.
+3. **Typed contracts**: strict schemas for downstream reliability.
+4. **Model transparency**: explicit formulas and assumptions (no hidden black-box scoring).
+5. **Graceful degradation**: AI reasoning falls back to deterministic logic when unavailable.
 
 ---
 
-## Architecture
+## 2. Problem Statement
+
+M&A analysis usually suffers from 4 recurring issues:
+
+1. Input fragmentation (SEC filings vs peer tables vs precedents in separate formats).
+2. Inconsistent entity naming and schema conventions.
+3. Weak confidence controls around sparse samples.
+4. Narrative outputs disconnected from numerical evidence.
+
+This project addresses all 4 by structuring the workflow into formal pipeline stages and quality controls.
+
+---
+
+## 3. Repository Layout
 
 ```text
-analyze_deal.py                     # CLI entry point
-
-└── deal_pipeline/
-    ├── ingestion.py                # multi-format file ingestion + discovery
-    ├── normalization.py            # schema harmonization + cleaning + FX normalization
-    ├── feature_engineering.py      # metric derivation (Revenue/EBITDA/EV/multiples)
-    ├── analysis.py                 # comps + precedents analytical engine
-    ├── quality.py                  # data quality checks and confidence score
-    ├── scenarios.py                # implied valuation scenario engine
-    ├── insights.py                 # signal detection + AI reasoning
-    ├── memo.py                     # narrative memo generation
-    ├── export.py                   # JSON/XLSX artifacts
-    ├── schemas.py                  # strict Pydantic contracts
-    ├── config.py                   # pipeline runtime configuration
-    └── pipeline.py                 # orchestration layer
+.
+├── analyze_deal.py
+├── requirements.txt
+├── tests/
+│   └── test_pipeline_units.py
+├── deal_pipeline/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── ingestion.py
+│   ├── normalization.py
+│   ├── feature_engineering.py
+│   ├── analysis.py
+│   ├── quality.py
+│   ├── scenarios.py
+│   ├── dcf.py
+│   ├── robustness.py
+│   ├── blended_valuation.py
+│   ├── insights.py
+│   ├── memo.py
+│   ├── export.py
+│   ├── schemas.py
+│   └── pipeline.py
+├── data/      # symlink or local directory
+└── output/
 ```
 
 ---
 
-## Methodology
+## 4. Data Universe and Input Contracts
 
-## 1) Ingestion
+### 4.1 Supported file formats
 
-- Reads curated directories (`data/processed`, `data/financials`, `data/peers`, `data/precedents`).
-- Auto-discovers compatible files by naming signals when folder conventions are incomplete.
-- Preserves source-file lineage in loaded frames.
+- CSV
+- JSON
+- XLSX / XLS
 
-## 2) Normalization
+### 4.2 Expected data zones
 
-- Removes duplicates.
-- Standardizes company names and identifiers.
-- Parses dates to ISO-compatible datetime representation.
-- Coerces numeric text to numeric types.
-- Converts supported non-USD currencies to USD via rule-based FX mapping.
-- Aligns heterogenous fields into canonical schemas.
+- `data/processed/`:
+  - `companies.csv`
+  - `filings_target_forms.csv`
+  - `filings_all.csv`
+  - `companyfacts_all.csv`
+  - `companyconcept_revenue.csv`
+- `data/raw/`: SEC source JSON payloads
+- `data/financials/`: optional external fundamentals
+- `data/peers/`: optional peer datasets
+- `data/precedents/`: optional transaction datasets
 
-## 3) Feature Engineering
+### 4.3 Auto-discovery fallback
 
-- Revenue (latest available from prioritized SEC concepts or external sources)
-- Revenue growth (YoY where historical reference exists)
-- EBITDA (direct concept or operating-income + depreciation proxy)
+If dedicated folders are missing, ingestion discovers candidate files using normalized filename patterns:
+
+- financial: `financial`
+- peer/comps: `peer` or `comp`
+- precedents: `precedent`, `transaction`, `mna`
+
+---
+
+## 5. Pipeline Stages
+
+## Stage A: Ingestion (`ingestion.py`)
+
+- Loads SEC processed tables.
+- Streams large `companyfacts_all.csv` in chunks and filters to core valuation concepts.
+- Reads mixed-format external datasets and stamps source lineage.
+
+## Stage B: Normalization (`normalization.py`)
+
+- Entity normalization (ticker/CIK/name standardization).
+- Date coercion to datetime.
+- Numeric coercion from string-formatted financial fields.
+- Currency normalization to USD via explicit FX map.
+- Schema alignment from heterogeneous aliases to canonical fields.
+
+## Stage C: Feature Engineering (`feature_engineering.py`)
+
+Primary engineered metrics:
+
+- Revenue
+- Revenue growth YoY
+- EBITDA
 - EBITDA margin
-- Enterprise value (derived when direct EV unavailable)
-- EV/Revenue and EV/EBITDA
+- Enterprise value
+- EV/Revenue
+- EV/EBITDA
 
-## 4) Comps Analysis
+Derivation behavior:
 
-- Builds peer set from external peers, otherwise from available company universe.
-- Applies sector and scale filters with minimum sample guardrails.
-- Computes peer medians and target percentile ranking on EV multiples.
+- Prefers SEC concept hierarchy for revenue and EBITDA.
+- Derives EV from market cap + debt - cash where EV is unavailable.
+- Merges SEC-derived and external fundamentals with precedence rules.
 
-## 5) Precedent Analysis
+## Stage D: Comps and Precedents (`analysis.py`)
 
-- Uses explicit precedents when provided.
-- Falls back to filing-derived transaction proxy set when needed.
-- Filters by sector, size, and recency.
-- Computes median/P25/P75 multiple distributions and implied valuation range.
+### Comparable analysis
 
-## 6) Signal Layer
+- Peer universe creation (external peers if available; else fallback universe).
+- Sector and size bounding.
+- Medians and target percentile positions.
 
-Outputs discrete analytical labels:
+### Precedent analysis
 
-- `growth_profile`: `high | medium | low`
-- `margin_profile`: `strong | average | weak`
-- `valuation_position`: `premium | fair | discounted`
-- `precedent_comparison`: `above | within | below_range`
-- `risk_flags`: machine-detected quality/coverage risks
+- Uses explicit precedents if available.
+- Otherwise synthesizes proxy precedent dataset from `S-4` / `8-K` context.
+- Sector/size/recency filters.
+- Distributional stats and valuation range construction.
 
-## 7) AI Reasoning Layer
+## Stage E: Quality / Scenario / DCF / Robustness / Blend
 
-- Input: engineered/aggregated metrics only (never raw filings).
-- Output contract (strict JSON):
-  - `key_insights` (2–4),
-  - `primary_risk` (1),
-  - `conclusion` (1 concise line).
-- Deterministic fallback logic if model/API unavailable.
+### Quality (`quality.py`)
 
----
+Weighted confidence score from coverage + sample sufficiency:
 
-## Data Quality and Confidence Controls
+- revenue completeness
+- EBITDA completeness
+- EV completeness
+- EV multiple completeness
+- peer sufficiency
+- precedent sufficiency
 
-`quality.py` computes a weighted score (0–100) from:
+### Scenario engine (`scenarios.py`)
 
-- revenue completeness,
-- EBITDA completeness,
-- EV completeness,
-- multiple completeness,
-- peer sufficiency,
-- precedent sufficiency.
+Builds implied EV distributions from:
 
-Issue flags include:
+- peer multiple anchors
+- precedent quantile anchors
 
-- `low_revenue_completeness`
-- `low_ebitda_completeness`
-- `low_ev_completeness`
-- `insufficient_peer_set`
-- `insufficient_precedent_set`
+### DCF engine (`dcf.py`)
 
-This score is included in JSON, Excel, and memo output.
+Computes downside/base/upside DCF cases using configurable assumptions:
 
----
+- projection years
+- WACC
+- terminal growth
+- tax, capex, depreciation, and NWC ratios
 
-## Valuation Scenario Engine
+Includes WACC/terminal-growth sensitivity grid.
 
-`scenarios.py` generates implied EV cases from:
+### Robustness diagnostics (`robustness.py`)
 
-- peer EV/Revenue and EV/EBITDA anchors,
-- precedent P25/P75 distribution anchors,
-- target scale metrics (Revenue/EBITDA).
+- Bootstrap confidence intervals for multiple distributions.
+- Statistical spread metrics.
+- Target z-scores vs comps distributions.
 
-Produces:
+### Blended valuation synthesis (`blended_valuation.py`)
 
-- scenario-level implied enterprise values,
-- low/base/high aggregate implied EV,
-- gap-to-base relative to current EV.
+Combines 4 anchors with configurable weights:
 
----
+- comps anchor
+- precedents anchor
+- scenarios anchor
+- DCF anchor
 
-## Outputs
+Produces blended implied EV and directional stance (`upside|neutral|downside`).
 
-Each run writes artifacts to `output/`:
+## Stage F: Insight Generation (`insights.py`)
 
-1. `deal_analysis_<TICKER>_<TIMESTAMP>.json`
-2. `deal_analysis_<TICKER>_<TIMESTAMP>.xlsx`
-3. `deal_analysis_<TICKER>_memo.md`
+Signals:
 
-Excel workbook sheets:
+- growth profile
+- margin profile
+- valuation position
+- precedent comparison
+- risk flags
+
+AI reasoning:
+
+- Input strictly structured engineered payload.
+- Output strict JSON with:
+  - `key_insights` (2–4)
+  - `primary_risk` (1)
+  - `conclusion` (1)
+
+## Stage G: Exports (`export.py`, `memo.py`)
+
+### JSON report
+
+Typed contract via Pydantic.
+
+### Excel workbook
+
+Sheets:
 
 - `summary`
 - `comps`
 - `precedents`
 - `scenarios`
+- `dcf`
+- `dcf_sens`
+- `robustness`
+- `blend`
 - `quality`
 - `raw_data`
 
-JSON top-level contract:
+### Markdown memo
+
+Narrative investment memo with:
+
+- financial snapshot
+- comps/precedent takeaways
+- scenario + DCF interpretation
+- blend conclusion
+- diagnostics and key risks
+
+---
+
+## 6. Formula Reference
+
+### Core valuation formulas
+
+- `EBITDA Margin = EBITDA / Revenue`
+- `Enterprise Value = Market Cap + Debt - Cash`
+- `EV/Revenue = Enterprise Value / Revenue`
+- `EV/EBITDA = Enterprise Value / EBITDA`
+
+### Growth
+
+- `Revenue Growth YoY = (Revenue_t - Revenue_t-1) / Revenue_t-1`
+
+### DCF framework
+
+For each projected year `t`:
+
+- `Revenue_t = Revenue_(t-1) * (1 + g)`
+- `EBITDA_t = Revenue_t * EBITDA_margin`
+- `EBIT_t = EBITDA_t - Depreciation_t`
+- `NOPAT_t = EBIT_t * (1 - tax_rate)`
+- `FCF_t = NOPAT_t + Depreciation_t - Capex_t - ΔNWC_t`
+- `PV(FCF_t) = FCF_t / (1 + WACC)^t`
+
+Terminal value:
+
+- `TV = FCF_(n+1) / (WACC - g_terminal)`
+
+Enterprise value:
+
+- `EV = Σ PV(FCF_t) + PV(TV)`
+
+### Blended valuation
+
+- `Blended EV = Σ(weight_i * anchor_i)` over available anchors only.
+
+---
+
+## 7. Configuration Surface
+
+`PipelineConfig` exposes analytical controls for:
+
+- quality thresholds
+- signal thresholds
+- DCF assumptions
+- blend weights
+- output behavior
+
+CLI (`analyze_deal.py`) maps directly to key config fields.
+
+Example:
+
+```bash
+python3 analyze_deal.py \
+  --target-ticker ABT \
+  --min-peer-count 7 \
+  --min-precedent-count 10 \
+  --dcf-projection-years 7 \
+  --dcf-wacc-base 0.105 \
+  --dcf-terminal-growth-base 0.025 \
+  --blend-weight-comps 0.30 \
+  --blend-weight-precedents 0.25 \
+  --blend-weight-scenarios 0.20 \
+  --blend-weight-dcf 0.25
+```
+
+---
+
+## 8. Running the Project
+
+## 8.1 Install
+
+```bash
+python3 -m pip install --user -r requirements.txt
+```
+
+## 8.2 Optional AI key
+
+```bash
+export OPENAI_API_KEY="<your_key>"
+```
+
+## 8.3 Execute
+
+```bash
+python3 analyze_deal.py
+```
+
+---
+
+## 9. Testing
+
+```bash
+python3 -m unittest discover -s tests -p "test_*.py" -v
+```
+
+Current test coverage validates:
+
+- signal threshold behavior
+- quality scoring and issue flags
+- scenario valuation generation
+- DCF case generation and sensitivity output
+- blended valuation synthesis
+
+---
+
+## 10. Output Contract (Top-Level JSON)
 
 - `company`
 - `financials`
@@ -206,100 +360,38 @@ JSON top-level contract:
 - `signals`
 - `data_quality`
 - `valuation_scenarios`
+- `dcf_analysis`
+- `robustness`
+- `blended_valuation`
 - `insights`
 - `diagnostics`
 - `conclusion`
 
 ---
 
-## Runbook
+## 11. Risk and Limitations
 
-## Setup
-
-```bash
-cd /Users/jaytrivedi/Documents/Codex/2026-04-23-files-mentioned-by-the-user-sec-2
-python3 -m pip install --user -r requirements.txt
-```
-
-Optional AI reasoning:
-
-```bash
-export OPENAI_API_KEY="<your_key>"
-```
-
-## Execute
-
-```bash
-python3 analyze_deal.py
-```
-
-Example with explicit controls:
-
-```bash
-python3 analyze_deal.py \
-  --target-ticker ABT \
-  --openai-model gpt-4o-mini \
-  --min-peer-count 7 \
-  --min-precedent-count 10 \
-  --low-growth-threshold 0.04 \
-  --high-growth-threshold 0.18 \
-  --weak-margin-threshold 0.10 \
-  --strong-margin-threshold 0.24 \
-  --premium-multiple-buffer 0.20 \
-  --discounted-multiple-buffer 0.20
-```
+1. SEC concept mapping can vary by filer taxonomy quality.
+2. Precedent fallback from filings is directional, not equal to curated M&A databases.
+3. FX map is static and should be replaced with dated FX curves for production valuation parity.
+4. DCF assumptions are intentionally transparent/simple; advanced capital-structure modeling is not yet included.
+5. Statistical robustness depends on sample depth.
 
 ---
 
-## CLI Reference
+## 12. Recommended Next Expansions
 
-- `--data-dir`: root input directory (default `./data`)
-- `--output-dir`: artifact output directory (default `./output`)
-- `--target-ticker`: target ticker override
-- `--target-cik`: target CIK override
-- `--target-company`: target name override
-- `--openai-model`: insight model name
-- `--max-raw-rows-for-excel`: cap row volume for `raw_data` tab
-- `--min-peer-count`: minimum peer sample confidence threshold
-- `--min-precedent-count`: minimum precedent sample confidence threshold
-- `--low-growth-threshold`: low/medium growth cutoff
-- `--high-growth-threshold`: medium/high growth cutoff
-- `--weak-margin-threshold`: weak/average margin cutoff
-- `--strong-margin-threshold`: average/strong margin cutoff
-- `--premium-multiple-buffer`: premium vs peer median buffer
-- `--discounted-multiple-buffer`: discounted vs peer median buffer
-- `--disable-markdown-memo`: skip markdown memo generation
+1. Transaction-level synergy and accretion/dilution module.
+2. Multi-currency historical FX normalization with date-aware rates.
+3. Capital structure scenarios and equity value bridge.
+4. Sector-specific multiple rules and outlier treatment policies.
+5. Explainability report that links each insight line to exact metric inputs.
 
 ---
 
-## Reproducibility and Governance
+## 13. Versioning
 
-- Deterministic transformations for ingestion/normalization/feature engineering.
-- Typed output schemas via Pydantic.
-- Source lineage retained on ingested records (`source_file`).
-- Test coverage for key logic blocks (`tests/test_pipeline_units.py`).
-- Version-controlled code and parameterized thresholds for auditability.
+Current package version:
 
----
-
-## Tests
-
-```bash
-python3 -m unittest discover -s tests -p "test_*.py" -v
-```
-
----
-
-## Current Dataset Note
-
-The linked dataset currently contains strong SEC filing/facts coverage and limited external peer/precedent enrichment. Analytical outputs remain valid, but peer-based valuation conviction improves materially when richer `data/peers` and `data/precedents` tables are provided.
-
----
-
-## Roadmap (Suggested Next Upgrades)
-
-- Add DCF module with WACC, terminal growth, and sensitivity cube.
-- Add accretion/dilution merger model for buyer/target scenarios.
-- Add geography-aware precedent filters and FX history tables.
-- Add confidence-weighted blended valuation framework.
+- `deal_pipeline.__version__ = 3.0.0`
 

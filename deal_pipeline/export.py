@@ -8,11 +8,14 @@ import pandas as pd
 
 from .config import PipelineConfig
 from .schemas import (
+    BlendedValuationSummary,
     ComparableAnalysis,
     DataQuality,
+    DCFSummary,
     FinalReport,
     FinancialSnapshot,
     PrecedentAnalysis,
+    RobustnessSummary,
     SignalSet,
     ValuationScenarioSummary,
 )
@@ -46,6 +49,9 @@ def _build_summary_sheet(
     signals: Dict[str, Any],
     data_quality: Dict[str, Any],
     valuation_scenarios: Dict[str, Any],
+    dcf_summary: Dict[str, Any],
+    robustness_summary: Dict[str, Any],
+    blended_valuation_summary: Dict[str, Any],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -78,6 +84,16 @@ def _build_summary_sheet(
         ("implied_ev_base", valuation_scenarios.get("implied_ev_base")),
         ("implied_ev_high", valuation_scenarios.get("implied_ev_high")),
         ("gap_to_base", valuation_scenarios.get("gap_to_base")),
+        ("dcf_implied_ev_low", dcf_summary.get("implied_ev_low")),
+        ("dcf_implied_ev_base", dcf_summary.get("implied_ev_base")),
+        ("dcf_implied_ev_high", dcf_summary.get("implied_ev_high")),
+        ("dcf_gap_to_current", dcf_summary.get("dcf_gap_to_current")),
+        ("comps_ev_rev_ci_low", robustness_summary.get("comps_ev_revenue_ci_low")),
+        ("comps_ev_rev_ci_high", robustness_summary.get("comps_ev_revenue_ci_high")),
+        ("target_ev_rev_zscore", robustness_summary.get("target_ev_revenue_zscore")),
+        ("blended_implied_ev", blended_valuation_summary.get("blended_implied_ev")),
+        ("blend_gap_to_current", blended_valuation_summary.get("blend_gap_to_current")),
+        ("blend_stance", blended_valuation_summary.get("blend_stance")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -94,10 +110,17 @@ def export_outputs(
     signals: Dict[str, Any],
     data_quality: Dict[str, Any],
     valuation_scenarios: Dict[str, Any],
+    dcf_summary: Dict[str, Any],
+    robustness_summary: Dict[str, Any],
+    blended_valuation_summary: Dict[str, Any],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
     scenario_table: pd.DataFrame,
+    dcf_table: pd.DataFrame,
+    dcf_sensitivity_table: pd.DataFrame,
+    robustness_table: pd.DataFrame,
+    blend_table: pd.DataFrame,
     quality_table: pd.DataFrame,
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
@@ -124,6 +147,9 @@ def export_outputs(
     signal_set = SignalSet(**signals)
     data_quality_set = DataQuality(**data_quality)
     valuation_scenario_set = ValuationScenarioSummary(**valuation_scenarios)
+    dcf_set = DCFSummary(**dcf_summary)
+    robustness_set = RobustnessSummary(**robustness_summary)
+    blend_set = BlendedValuationSummary(**blended_valuation_summary)
 
     report = FinalReport(
         company={
@@ -138,6 +164,9 @@ def export_outputs(
         signals=signal_set,
         data_quality=data_quality_set,
         valuation_scenarios=valuation_scenario_set,
+        dcf_analysis=dcf_set,
+        robustness=robustness_set,
+        blended_valuation=blend_set,
         insights=insights,
         diagnostics=diagnostics,
         conclusion=insights["conclusion"],
@@ -155,6 +184,9 @@ def export_outputs(
         signals=signals,
         data_quality=data_quality,
         valuation_scenarios=valuation_scenarios,
+        dcf_summary=dcf_summary,
+        robustness_summary=robustness_summary,
+        blended_valuation_summary=blended_valuation_summary,
         insights=insights,
     )
     raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()
@@ -164,6 +196,10 @@ def export_outputs(
         comps_table.to_excel(writer, index=False, sheet_name="comps")
         precedents_table.to_excel(writer, index=False, sheet_name="precedents")
         scenario_table.to_excel(writer, index=False, sheet_name="scenarios")
+        dcf_table.to_excel(writer, index=False, sheet_name="dcf")
+        dcf_sensitivity_table.to_excel(writer, index=False, sheet_name="dcf_sens")
+        robustness_table.to_excel(writer, index=False, sheet_name="robustness")
+        blend_table.to_excel(writer, index=False, sheet_name="blend")
         quality_table.to_excel(writer, index=False, sheet_name="quality")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 

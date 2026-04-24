@@ -27,6 +27,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--strong-margin-threshold", type=float, default=0.25, help="Margin threshold for average/strong")
     parser.add_argument("--premium-multiple-buffer", type=float, default=0.15, help="Buffer above peer multiple median for premium")
     parser.add_argument("--discounted-multiple-buffer", type=float, default=0.15, help="Buffer below peer multiple median for discounted")
+    parser.add_argument("--dcf-projection-years", type=int, default=5, help="Number of years in DCF projection model")
+    parser.add_argument("--dcf-wacc-base", type=float, default=0.10, help="Base WACC used in DCF")
+    parser.add_argument("--dcf-terminal-growth-base", type=float, default=0.025, help="Base terminal growth rate for DCF")
+    parser.add_argument("--dcf-tax-rate", type=float, default=0.24, help="Tax rate used in DCF NOPAT")
+    parser.add_argument("--dcf-depreciation-pct-revenue", type=float, default=0.03, help="Depreciation as %% of revenue for DCF")
+    parser.add_argument("--dcf-capex-pct-revenue", type=float, default=0.035, help="Capex as %% of revenue for DCF")
+    parser.add_argument("--dcf-nwc-pct-revenue", type=float, default=0.015, help="NWC investment as %% of revenue for DCF")
+    parser.add_argument("--blend-weight-comps", type=float, default=0.35, help="Blend weight assigned to comps anchor")
+    parser.add_argument("--blend-weight-precedents", type=float, default=0.25, help="Blend weight assigned to precedents anchor")
+    parser.add_argument("--blend-weight-scenarios", type=float, default=0.20, help="Blend weight assigned to scenarios anchor")
+    parser.add_argument("--blend-weight-dcf", type=float, default=0.20, help="Blend weight assigned to DCF anchor")
     parser.add_argument(
         "--disable-markdown-memo",
         action="store_true",
@@ -53,6 +64,17 @@ def main() -> None:
         strong_margin_threshold=args.strong_margin_threshold,
         premium_multiple_buffer=args.premium_multiple_buffer,
         discounted_multiple_buffer=args.discounted_multiple_buffer,
+        dcf_projection_years=args.dcf_projection_years,
+        dcf_wacc_base=args.dcf_wacc_base,
+        dcf_terminal_growth_base=args.dcf_terminal_growth_base,
+        dcf_tax_rate=args.dcf_tax_rate,
+        dcf_depreciation_pct_revenue=args.dcf_depreciation_pct_revenue,
+        dcf_capex_pct_revenue=args.dcf_capex_pct_revenue,
+        dcf_nwc_pct_revenue=args.dcf_nwc_pct_revenue,
+        blend_weight_comps=args.blend_weight_comps,
+        blend_weight_precedents=args.blend_weight_precedents,
+        blend_weight_scenarios=args.blend_weight_scenarios,
+        blend_weight_dcf=args.blend_weight_dcf,
         enable_markdown_memo=not args.disable_markdown_memo,
     )
 

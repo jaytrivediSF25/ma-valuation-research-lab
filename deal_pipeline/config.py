@@ -21,6 +21,19 @@ class PipelineConfig:
     premium_multiple_buffer: float = 0.15
     discounted_multiple_buffer: float = 0.15
     enable_markdown_memo: bool = True
+    dcf_projection_years: int = 5
+    dcf_wacc_base: float = 0.10
+    dcf_terminal_growth_base: float = 0.025
+    dcf_tax_rate: float = 0.24
+    dcf_depreciation_pct_revenue: float = 0.03
+    dcf_capex_pct_revenue: float = 0.035
+    dcf_nwc_pct_revenue: float = 0.015
+    dcf_growth_floor: float = 0.01
+    dcf_growth_cap: float = 0.20
+    blend_weight_comps: float = 0.35
+    blend_weight_precedents: float = 0.25
+    blend_weight_scenarios: float = 0.20
+    blend_weight_dcf: float = 0.20
 
     def ensure_directories(self) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)
