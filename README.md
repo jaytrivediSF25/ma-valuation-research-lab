@@ -1,248 +1,203 @@
-# Local M&A Intelligence Pipeline (SEC + Financial Modeling + AI Reasoning)
+# M&A Valuation Research Lab
 
-This repository contains a **production-style backend analytics pipeline** for M&A evaluation.
+A production-grade, local-first **finance data science pipeline** for transforming fragmented SEC, market, and transaction data into valuation-ready M&A intelligence.
 
-It ingests SEC/financial datasets, normalizes them, engineers valuation metrics, runs comps + precedent analysis, generates structured risk/signals, calls an LLM for concise investment insights, and exports both machine-readable and analyst-friendly outputs.
+This project is designed for analyst workflows that need:
 
-No UI. No web app. Pure local CLI pipeline.
+- disciplined data engineering,
+- transparent valuation mechanics,
+- reproducible outputs,
+- and structured AI-assisted interpretation.
 
----
-
-## 1. What This Project Does
-
-Given local raw files in `./data`, the pipeline produces:
-
-1. Structured analytical dataset for the target company.
-2. Comparable company analysis with median multiples and target percentiles.
-3. Precedent transaction valuation ranges.
-4. Structured signal detection (`growth_profile`, `margin_profile`, valuation positioning, risk flags).
-5. AI-generated insights using **structured metrics only** (not raw filings).
-6. Exports:
-   - JSON report
-   - Excel workbook
-   - Markdown memo
+No frontend. No dashboard. Pure analytical backend.
 
 ---
 
-## 2. Repository Structure
+## Investment Use Case
+
+The pipeline answers a core transaction question:
+
+**"Given available fundamentals, peers, and precedents, is the target trading/valued at a premium, fair value, or discount, and what are the key risks to conviction?"**
+
+The system produces decision-support artifacts suitable for:
+
+- internal IC prep,
+- banker valuation framing,
+- corp-dev screening,
+- PE diligence triage,
+- and repeatable model refreshes.
+
+---
+
+## Analytical Scope
+
+### Inputs
+
+- SEC filing data (`S-4`, `8-K`, `10-K`, `10-Q`)
+- SEC company facts (XBRL concepts)
+- Optional external financial datasets
+- Optional peer datasets
+- Optional precedent transaction datasets
+
+Supported file formats:
+
+- `CSV`
+- `JSON`
+- `XLSX/XLS`
+
+### Core Outputs
+
+1. Canonical, cleaned analytical dataset.
+2. Comparable company analysis (peer medians, target percentile position).
+3. Precedent transaction analysis (distributional multiples, implied range).
+4. Structured signal layer (growth/margin/valuation/risk flags).
+5. AI reasoning layer over engineered metrics (strict JSON response contract).
+6. Export package:
+   - machine-readable JSON,
+   - finance-friendly Excel workbook,
+   - markdown investment memo.
+
+---
+
+## Architecture
 
 ```text
-.
-├── analyze_deal.py
-├── requirements.txt
-├── data -> /Users/jaytrivedi/Desktop/SEC_EDGAR_BULK_PULL/data
-├── output/
+analyze_deal.py                     # CLI entry point
+
 └── deal_pipeline/
-    ├── __init__.py
-    ├── config.py
-    ├── ingestion.py
-    ├── normalization.py
-    ├── feature_engineering.py
-    ├── analysis.py
-    ├── insights.py
-    ├── quality.py
-    ├── scenarios.py
-    ├── memo.py
-    ├── export.py
-    ├── pipeline.py
-    ├── schemas.py
-    └── utils.py
+    ├── ingestion.py                # multi-format file ingestion + discovery
+    ├── normalization.py            # schema harmonization + cleaning + FX normalization
+    ├── feature_engineering.py      # metric derivation (Revenue/EBITDA/EV/multiples)
+    ├── analysis.py                 # comps + precedents analytical engine
+    ├── quality.py                  # data quality checks and confidence score
+    ├── scenarios.py                # implied valuation scenario engine
+    ├── insights.py                 # signal detection + AI reasoning
+    ├── memo.py                     # narrative memo generation
+    ├── export.py                   # JSON/XLSX artifacts
+    ├── schemas.py                  # strict Pydantic contracts
+    ├── config.py                   # pipeline runtime configuration
+    └── pipeline.py                 # orchestration layer
 ```
 
 ---
 
-## 3. End-to-End Flow
+## Methodology
 
-1. `ingestion.py`
-   - Reads CSV/JSON/XLSX from known folders and auto-discovered files.
-   - Loads SEC-processed assets (`companies`, `filings`, `companyfacts`, etc.).
+## 1) Ingestion
 
-2. `normalization.py`
-   - Removes duplicates.
-   - Standardizes company names.
-   - Converts dates to datetime.
-   - Converts numeric text to numeric types.
-   - Normalizes currencies to USD (rule-based FX map).
-   - Aligns heterogeneous input columns into canonical schemas.
+- Reads curated directories (`data/processed`, `data/financials`, `data/peers`, `data/precedents`).
+- Auto-discovers compatible files by naming signals when folder conventions are incomplete.
+- Preserves source-file lineage in loaded frames.
 
-3. `feature_engineering.py`
-   - Derives revenue, EBITDA, margins, EV.
-   - Computes EV/Revenue and EV/EBITDA.
-   - Merges SEC-derived metrics + external financial metrics.
-   - Selects target company by ticker/CIK/name or defaults to largest EV.
+## 2) Normalization
 
-4. `analysis.py`
-   - Comparable analysis:
-     - Peer filtering by sector and size bounds.
-     - Peer median multiples.
-     - Target percentile vs peers.
-   - Precedent analysis:
-     - Uses explicit precedent data if present, else derives proxy transactions from `S-4`/`8-K`.
-     - Filters by sector, size, and recency.
-     - Calculates EV multiple distributions and valuation range.
+- Removes duplicates.
+- Standardizes company names and identifiers.
+- Parses dates to ISO-compatible datetime representation.
+- Coerces numeric text to numeric types.
+- Converts supported non-USD currencies to USD via rule-based FX mapping.
+- Aligns heterogenous fields into canonical schemas.
 
-5. `quality.py` (new)
-   - Computes data quality coverage checks and issues.
-   - Produces a weighted quality score (0–100).
+## 3) Feature Engineering
 
-6. `scenarios.py` (new)
-   - Builds downside/base/upside implied EV scenarios from comps and precedents.
-   - Computes spread vs current EV.
+- Revenue (latest available from prioritized SEC concepts or external sources)
+- Revenue growth (YoY where historical reference exists)
+- EBITDA (direct concept or operating-income + depreciation proxy)
+- EBITDA margin
+- Enterprise value (derived when direct EV unavailable)
+- EV/Revenue and EV/EBITDA
 
-7. `insights.py`
-   - Rule-based signals.
-   - LLM output in strict JSON schema (`key_insights`, `primary_risk`, `conclusion`).
-   - Falls back to deterministic rule-based insight generation if API key/model call fails.
+## 4) Comps Analysis
 
-8. `export.py`
-   - Validates output with Pydantic schemas.
-   - Writes JSON report.
-   - Writes multi-sheet Excel:
-     - `summary`
-     - `comps`
-     - `precedents`
-     - `scenarios`
-     - `quality`
-     - `raw_data`
+- Builds peer set from external peers, otherwise from available company universe.
+- Applies sector and scale filters with minimum sample guardrails.
+- Computes peer medians and target percentile ranking on EV multiples.
 
-9. `memo.py` (new)
-   - Writes a clean markdown investment memo in `output/`.
+## 5) Precedent Analysis
 
----
+- Uses explicit precedents when provided.
+- Falls back to filing-derived transaction proxy set when needed.
+- Filters by sector, size, and recency.
+- Computes median/P25/P75 multiple distributions and implied valuation range.
 
-## 4. Data Inputs
+## 6) Signal Layer
 
-The pipeline accepts local files in any of these formats:
-
-- `.csv`
-- `.json`
-- `.xlsx` / `.xls`
-
-### Expected Data Areas
-
-- `data/processed/` (SEC-preprocessed tables)
-- `data/raw/` (SEC raw JSONs)
-- `data/financials/` (optional external financial tables)
-- `data/peers/` (optional peer dataset)
-- `data/precedents/` (optional transaction dataset)
-
-If structured folders are missing, the ingestion logic auto-discovers compatible files by filename keywords:
-
-- financial datasets: names containing `financial`
-- peer datasets: names containing `peer` or `comp`
-- precedent datasets: names containing `precedent`, `transaction`, or `mna`
-
----
-
-## 5. Financial Formulas Used
-
-Core metrics:
-
-- `EBITDA Margin = EBITDA / Revenue`
-- `Enterprise Value = Market Cap + Total Debt - Cash`
-- `EV/Revenue = Enterprise Value / Revenue`
-- `EV/EBITDA = Enterprise Value / EBITDA`
-- `Revenue Growth YoY = (Revenue - Prior Revenue) / Prior Revenue`
-
-Comparable outputs:
-
-- Peer median EV multiples
-- Target percentile ranking in peer distribution
-
-Precedent outputs:
-
-- Median/P25/P75 EV/Revenue and EV/EBITDA
-- Valuation range (low/high) from precedent multiple bands applied to target scale
-
----
-
-## 6. Signal Logic
-
-Generated signals:
+Outputs discrete analytical labels:
 
 - `growth_profile`: `high | medium | low`
 - `margin_profile`: `strong | average | weak`
 - `valuation_position`: `premium | fair | discounted`
 - `precedent_comparison`: `above | within | below_range`
-- `risk_flags`: derived issues such as:
-  - `thin_peer_set`
-  - `thin_precedent_set`
-  - `negative_ebitda`
-  - `missing_enterprise_value`
-  - `subscale_growth`
+- `risk_flags`: machine-detected quality/coverage risks
 
-All thresholds are configurable via CLI flags.
+## 7) AI Reasoning Layer
 
----
-
-## 7. Quick Start
-
-### 7.1 Install
-
-```bash
-cd /Users/jaytrivedi/Documents/Codex/2026-04-23-files-mentioned-by-the-user-sec-2
-python3 -m pip install --user -r requirements.txt
-```
-
-### 7.2 Optional LLM setup
-
-```bash
-export OPENAI_API_KEY="your_key_here"
-```
-
-### 7.3 Run
-
-```bash
-python3 analyze_deal.py
-```
+- Input: engineered/aggregated metrics only (never raw filings).
+- Output contract (strict JSON):
+  - `key_insights` (2–4),
+  - `primary_risk` (1),
+  - `conclusion` (1 concise line).
+- Deterministic fallback logic if model/API unavailable.
 
 ---
 
-## 8. CLI Options
+## Data Quality and Confidence Controls
 
-```bash
-python3 analyze_deal.py \
-  --data-dir ./data \
-  --output-dir ./output \
-  --target-ticker ABT \
-  --openai-model gpt-4o-mini \
-  --min-peer-count 5 \
-  --min-precedent-count 5 \
-  --low-growth-threshold 0.03 \
-  --high-growth-threshold 0.15 \
-  --weak-margin-threshold 0.12 \
-  --strong-margin-threshold 0.25 \
-  --premium-multiple-buffer 0.15 \
-  --discounted-multiple-buffer 0.15
-```
+`quality.py` computes a weighted score (0–100) from:
 
-### Option Reference
+- revenue completeness,
+- EBITDA completeness,
+- EV completeness,
+- multiple completeness,
+- peer sufficiency,
+- precedent sufficiency.
 
-- `--data-dir`: input data root.
-- `--output-dir`: artifacts directory.
-- `--target-ticker`, `--target-cik`, `--target-company`: explicit target selector.
-- `--openai-model`: model for insight layer.
-- `--max-raw-rows-for-excel`: cap row volume in `raw_data` sheet.
-- `--min-peer-count`, `--min-precedent-count`: quality thresholds.
-- `--low-growth-threshold`, `--high-growth-threshold`: growth profile cutoffs.
-- `--weak-margin-threshold`, `--strong-margin-threshold`: margin profile cutoffs.
-- `--premium-multiple-buffer`, `--discounted-multiple-buffer`: valuation positioning buffers.
-- `--disable-markdown-memo`: skips markdown memo generation.
+Issue flags include:
+
+- `low_revenue_completeness`
+- `low_ebitda_completeness`
+- `low_ev_completeness`
+- `insufficient_peer_set`
+- `insufficient_precedent_set`
+
+This score is included in JSON, Excel, and memo output.
 
 ---
 
-## 9. Output Artifacts
+## Valuation Scenario Engine
 
-Each run writes timestamped files into `output/`:
+`scenarios.py` generates implied EV cases from:
 
-1. JSON report:
-   - `deal_analysis_<TICKER>_<YYYYMMDD_HHMMSS>.json`
-2. Excel workbook:
-   - `deal_analysis_<TICKER>_<YYYYMMDD_HHMMSS>.xlsx`
-3. Markdown memo:
-   - `deal_analysis_<TICKER>_memo.md`
+- peer EV/Revenue and EV/EBITDA anchors,
+- precedent P25/P75 distribution anchors,
+- target scale metrics (Revenue/EBITDA).
 
-### JSON Top-Level Keys
+Produces:
+
+- scenario-level implied enterprise values,
+- low/base/high aggregate implied EV,
+- gap-to-base relative to current EV.
+
+---
+
+## Outputs
+
+Each run writes artifacts to `output/`:
+
+1. `deal_analysis_<TICKER>_<TIMESTAMP>.json`
+2. `deal_analysis_<TICKER>_<TIMESTAMP>.xlsx`
+3. `deal_analysis_<TICKER>_memo.md`
+
+Excel workbook sheets:
+
+- `summary`
+- `comps`
+- `precedents`
+- `scenarios`
+- `quality`
+- `raw_data`
+
+JSON top-level contract:
 
 - `company`
 - `financials`
@@ -257,106 +212,77 @@ Each run writes timestamped files into `output/`:
 
 ---
 
-## 10. Example JSON Shape
+## Runbook
 
-```json
-{
-  "company": {
-    "name": "ABBOTT LABORATORIES",
-    "ticker": "ABT",
-    "cik": "0000001800",
-    "sector": null
-  },
-  "financials": {
-    "revenue": 42873000000.0,
-    "ebitda": 12035000000.0,
-    "enterprise_value": 170000000000.0
-  },
-  "comparable_analysis": {
-    "peer_count": 12,
-    "peer_median_ev_revenue": 4.9
-  },
-  "precedent_transactions": {
-    "transaction_count": 35,
-    "valuation_range_low": 148000000000.0,
-    "valuation_range_high": 192000000000.0
-  },
-  "signals": {
-    "growth_profile": "medium",
-    "margin_profile": "strong",
-    "valuation_position": "fair",
-    "precedent_comparison": "within",
-    "risk_flags": []
-  },
-  "data_quality": {
-    "score": 84.5,
-    "checks": {},
-    "issues": []
-  },
-  "valuation_scenarios": {
-    "scenario_count": 10,
-    "implied_ev_low": 151000000000.0,
-    "implied_ev_base": 171500000000.0,
-    "implied_ev_high": 198200000000.0
-  },
-  "insights": {
-    "key_insights": [
-      "..."
-    ],
-    "primary_risk": "...",
-    "conclusion": "..."
-  },
-  "diagnostics": {
-    "companies_loaded": 50
-  },
-  "conclusion": "..."
-}
+## Setup
+
+```bash
+cd /Users/jaytrivedi/Documents/Codex/2026-04-23-files-mentioned-by-the-user-sec-2
+python3 -m pip install --user -r requirements.txt
+```
+
+Optional AI reasoning:
+
+```bash
+export OPENAI_API_KEY="<your_key>"
+```
+
+## Execute
+
+```bash
+python3 analyze_deal.py
+```
+
+Example with explicit controls:
+
+```bash
+python3 analyze_deal.py \
+  --target-ticker ABT \
+  --openai-model gpt-4o-mini \
+  --min-peer-count 7 \
+  --min-precedent-count 10 \
+  --low-growth-threshold 0.04 \
+  --high-growth-threshold 0.18 \
+  --weak-margin-threshold 0.10 \
+  --strong-margin-threshold 0.24 \
+  --premium-multiple-buffer 0.20 \
+  --discounted-multiple-buffer 0.20
 ```
 
 ---
 
-## 11. Data Quality Scoring (new)
+## CLI Reference
 
-Score range: `0 - 100`
-
-Weighted components:
-
-- Revenue completeness: 20%
-- EBITDA completeness: 20%
-- EV completeness: 20%
-- EV/Revenue completeness: 10%
-- EV/EBITDA completeness: 10%
-- Peer sufficiency: 10%
-- Precedent sufficiency: 10%
-
-Issue flags include:
-
-- `low_company_metric_coverage`
-- `low_revenue_completeness`
-- `low_ebitda_completeness`
-- `low_ev_completeness`
-- `insufficient_peer_set`
-- `insufficient_precedent_set`
+- `--data-dir`: root input directory (default `./data`)
+- `--output-dir`: artifact output directory (default `./output`)
+- `--target-ticker`: target ticker override
+- `--target-cik`: target CIK override
+- `--target-company`: target name override
+- `--openai-model`: insight model name
+- `--max-raw-rows-for-excel`: cap row volume for `raw_data` tab
+- `--min-peer-count`: minimum peer sample confidence threshold
+- `--min-precedent-count`: minimum precedent sample confidence threshold
+- `--low-growth-threshold`: low/medium growth cutoff
+- `--high-growth-threshold`: medium/high growth cutoff
+- `--weak-margin-threshold`: weak/average margin cutoff
+- `--strong-margin-threshold`: average/strong margin cutoff
+- `--premium-multiple-buffer`: premium vs peer median buffer
+- `--discounted-multiple-buffer`: discounted vs peer median buffer
+- `--disable-markdown-memo`: skip markdown memo generation
 
 ---
 
-## 12. Valuation Scenario Modeling (new)
+## Reproducibility and Governance
 
-Scenario engine combines:
-
-- Peer median EV/Revenue, EV/EBITDA
-- Precedent P25/P75 EV multiples
-- Target scale metrics (Revenue, EBITDA)
-
-Outputs:
-
-- Scenario table with implied EV per method
-- `implied_ev_low`, `implied_ev_base`, `implied_ev_high`
-- `gap_to_base` vs current EV
+- Deterministic transformations for ingestion/normalization/feature engineering.
+- Typed output schemas via Pydantic.
+- Source lineage retained on ingested records (`source_file`).
+- Test coverage for key logic blocks (`tests/test_pipeline_units.py`).
+- Version-controlled code and parameterized thresholds for auditability.
 
 ---
 
-## 13. Running Unit Tests
+## Tests
 
 ```bash
 python3 -m unittest discover -s tests -p "test_*.py" -v
@@ -364,60 +290,16 @@ python3 -m unittest discover -s tests -p "test_*.py" -v
 
 ---
 
-## 14. Troubleshooting
+## Current Dataset Note
 
-### `ModuleNotFoundError`
-
-Install dependencies:
-
-```bash
-python3 -m pip install --user -r requirements.txt
-```
-
-### `No engineered company metrics available`
-
-- Confirm `data/processed/companyfacts_all.csv` exists and is non-empty.
-- Confirm relevant SEC concepts are present for revenue/debt/cash/EBITDA derivations.
-
-### Low peer/precedent count
-
-- Add external `data/peers` and `data/precedents`.
-- Relax thresholds:
-  - `--min-peer-count`
-  - `--min-precedent-count`
+The linked dataset currently contains strong SEC filing/facts coverage and limited external peer/precedent enrichment. Analytical outputs remain valid, but peer-based valuation conviction improves materially when richer `data/peers` and `data/precedents` tables are provided.
 
 ---
 
-## 15. Extension Guide
+## Roadmap (Suggested Next Upgrades)
 
-To extend this pipeline:
-
-1. Add new normalized concepts in `normalization.py`.
-2. Add additional SEC concept mappings in `feature_engineering.py`.
-3. Add advanced filtering logic in `analysis.py`.
-4. Add domain-specific signals in `insights.py`.
-5. Add custom output sheets in `export.py`.
-6. Add additional model-based scenario methods in `scenarios.py`.
-
----
-
-## 16. Notes on AI Layer
-
-- The LLM receives only structured payloads (not raw filings).
-- Output contract is strict JSON.
-- If API calls fail or API key is absent, pipeline uses deterministic fallback logic.
-
----
-
-## 17. Current Production Status
-
-- CLI pipeline: implemented
-- SEC ingestion integration: implemented
-- Comps analysis: implemented
-- Precedent analysis: implemented
-- Signal detection: implemented
-- AI JSON insight generation: implemented
-- JSON + Excel export: implemented
-- Markdown memo export: implemented
-- Unit tests for key components: implemented
+- Add DCF module with WACC, terminal growth, and sensitivity cube.
+- Add accretion/dilution merger model for buyer/target scenarios.
+- Add geography-aware precedent filters and FX history tables.
+- Add confidence-weighted blended valuation framework.
 
