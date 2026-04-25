@@ -9,6 +9,7 @@ from deal_pipeline.blended_valuation import build_blended_valuation
 from deal_pipeline.config import PipelineConfig
 from deal_pipeline.dcf import run_dcf_analysis
 from deal_pipeline.insights import generate_signals
+from deal_pipeline.ic_pack import create_ic_pack
 from deal_pipeline.lbo import run_lbo_underwriting
 from deal_pipeline.lineage import build_lineage_report
 from deal_pipeline.market_data import fetch_market_data_context
@@ -220,6 +221,19 @@ class PipelineUnitTests(unittest.TestCase):
         )
         self.assertEqual(out.summary["validation_checks"], 5)
         self.assertIn("status", out.validation_table.columns)
+
+    def test_ic_pack_generation(self) -> None:
+        config = PipelineConfig(data_dir=Path("."), output_dir=Path("./output"))
+        payload = {"company": {"ticker": "TEST", "name": "Test Co"}, "signals": {"valuation_position": "fair"}, "insights": {"primary_risk": "none"}, "conclusion": "ok"}
+        result = create_ic_pack(
+            config=config,
+            report_payload=payload,
+            comps_table=pd.DataFrame([{"ticker": "AAA"}]),
+            precedents_table=pd.DataFrame([{"target_company": "BBB"}]),
+            scenarios_table=pd.DataFrame([{"scenario": "base"}]),
+            dcf_table=pd.DataFrame([{"case": "base"}]),
+        )
+        self.assertTrue(result.summary["generated"])
 
 
 if __name__ == "__main__":

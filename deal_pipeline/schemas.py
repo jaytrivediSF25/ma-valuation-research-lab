@@ -162,6 +162,12 @@ class ValidationSummary(BaseModel):
     validation_score: float = 0.0
 
 
+class ICPackSummary(BaseModel):
+    generated: bool = False
+    pack_dir: Optional[str] = None
+    manifest_path: Optional[str] = None
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -197,6 +203,7 @@ class FinalReport(BaseModel):
     sector_pack: SectorPackSummary
     lineage: LineageSummary
     validation: ValidationSummary
+    ic_pack: ICPackSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str

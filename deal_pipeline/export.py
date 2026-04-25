@@ -16,6 +16,7 @@ from .schemas import (
     DCFSummary,
     FinalReport,
     FinancialSnapshot,
+    ICPackSummary,
     LBOSummary,
     LineageSummary,
     MarketDataSummary,
@@ -68,6 +69,7 @@ def _build_summary_sheet(
     sector_pack_summary: Dict[str, Any],
     lineage_summary: Dict[str, Any],
     validation_summary: Dict[str, Any],
+    ic_pack_summary: Dict[str, Any],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -129,6 +131,8 @@ def _build_summary_sheet(
         ("lineage_row_count", lineage_summary.get("lineage_row_count")),
         ("validation_score", validation_summary.get("validation_score")),
         ("validation_warn_count", validation_summary.get("validation_warn_count")),
+        ("ic_pack_generated", ic_pack_summary.get("generated")),
+        ("ic_pack_dir", ic_pack_summary.get("pack_dir")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -156,6 +160,7 @@ def export_outputs(
     sector_pack_summary: Dict[str, Any],
     lineage_summary: Dict[str, Any],
     validation_summary: Dict[str, Any],
+    ic_pack_summary: Dict[str, Any],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -214,6 +219,7 @@ def export_outputs(
     sector_pack_set = SectorPackSummary(**sector_pack_summary)
     lineage_set = LineageSummary(**lineage_summary)
     validation_set = ValidationSummary(**validation_summary)
+    ic_pack_set = ICPackSummary(**ic_pack_summary)
 
     report = FinalReport(
         company={
@@ -239,6 +245,7 @@ def export_outputs(
         sector_pack=sector_pack_set,
         lineage=lineage_set,
         validation=validation_set,
+        ic_pack=ic_pack_set,
         insights=insights,
         diagnostics=diagnostics,
         conclusion=insights["conclusion"],
@@ -267,6 +274,7 @@ def export_outputs(
         sector_pack_summary=sector_pack_summary,
         lineage_summary=lineage_summary,
         validation_summary=validation_summary,
+        ic_pack_summary=ic_pack_summary,
         insights=insights,
     )
     raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()

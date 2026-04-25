@@ -10,6 +10,7 @@ from .export import ExportArtifacts, export_outputs
 from .feature_engineering import engineer_features, select_target_company
 from .ingestion import ingest_data
 from .insights import generate_ai_insights, generate_signals
+from .ic_pack import create_ic_pack
 from .lbo import run_lbo_underwriting
 from .lineage import build_lineage_report
 from .market_data import fetch_market_data_context
@@ -123,6 +124,16 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "validation": validation.summary,
     }
     insights = generate_ai_insights(structured_payload, config.openai_model)
+    report_for_pack = {**structured_payload, "insights": insights, "conclusion": insights.get("conclusion")}
+    ic_pack = create_ic_pack(
+        config=config,
+        report_payload=report_for_pack,
+        comps_table=comps.peer_table,
+        precedents_table=precedents.precedent_table,
+        scenarios_table=scenarios.scenario_table,
+        dcf_table=dcf.dcf_table,
+    )
+    structured_payload["ic_pack"] = ic_pack.summary
 
     diagnostic = {
         "companies_loaded": int(len(normalized.companies)),
@@ -144,6 +155,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "sector_pack": sector_pack_summary.get("sector_pack"),
         "lineage_row_count": lineage.summary.get("lineage_row_count"),
         "validation_score": validation.summary.get("validation_score"),
+        "ic_pack_dir": ic_pack.summary.get("pack_dir"),
         "blend_stance": blended.summary.get("blend_stance"),
     }
 
@@ -170,6 +182,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         sector_pack_summary=sector_pack_summary,
         lineage_summary=lineage.summary,
         validation_summary=validation.summary,
+        ic_pack_summary=ic_pack.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,

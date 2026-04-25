@@ -73,6 +73,7 @@ def build_markdown_memo(
     sector_pack = structured_report.get("sector_pack", {})
     lineage = structured_report.get("lineage", {})
     validation = structured_report.get("validation", {})
+    ic_pack = structured_report.get("ic_pack", {})
 
     lines: List[str] = []
     lines.append(f"# Deal Analysis Memo: {company.get('name') or company.get('ticker')}")
@@ -185,6 +186,11 @@ def build_markdown_memo(
     lines.append("")
     lines.append(f"- Validation score: {validation.get('validation_score', 0)}")
     lines.append(f"- Checks / warnings: {validation.get('validation_checks', 0)} / {validation.get('validation_warn_count', 0)}")
+    lines.append("")
+    lines.append("## IC Pack")
+    lines.append("")
+    lines.append(f"- Generated: {ic_pack.get('generated', False)}")
+    lines.append(f"- Pack directory: {ic_pack.get('pack_dir')}")
     lines.append("")
     lines.append("## Data Quality")
     lines.append("")
