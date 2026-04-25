@@ -10,6 +10,7 @@ from deal_pipeline.dcf import run_dcf_analysis
 from deal_pipeline.insights import generate_signals
 from deal_pipeline.lbo import run_lbo_underwriting
 from deal_pipeline.market_data import fetch_market_data_context
+from deal_pipeline.precedent_curation import curate_precedent_transactions
 from deal_pipeline.quality import evaluate_data_quality
 from deal_pipeline.scenarios import build_valuation_scenarios
 
@@ -157,6 +158,20 @@ class PipelineUnitTests(unittest.TestCase):
         comps = pd.DataFrame([{"ticker": "MDT"}])
         out = fetch_market_data_context(target, comps, config)
         self.assertEqual(out.summary["status"], "disabled")
+
+    def test_precedent_curation(self) -> None:
+        target = pd.Series({"sector": "Healthcare", "revenue": 1000.0})
+        precedents = pd.DataFrame(
+            [
+                {"target_company": "A Med", "acquirer": "X Health", "sector": "Healthcare", "revenue": 900.0, "ev_revenue": 3.2, "ev_ebitda": 12.0},
+                {"target_company": "B Med", "acquirer": "Y Health", "sector": "Healthcare", "revenue": 1100.0, "ev_revenue": 3.4, "ev_ebitda": 12.8},
+                {"target_company": "Outlier", "acquirer": "Z", "sector": "Healthcare", "revenue": 800.0, "ev_revenue": 25.0, "ev_ebitda": 90.0},
+            ]
+        )
+        out = curate_precedent_transactions(target, precedents)
+        self.assertEqual(out.summary["raw_transaction_count"], 3)
+        self.assertIn("relevance_score", out.curated_table.columns)
+        self.assertGreaterEqual(out.summary["curated_transaction_count"], 1)
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from .lbo import run_lbo_underwriting
 from .market_data import fetch_market_data_context
 from .memo import build_markdown_memo
 from .normalization import normalize_data
+from .precedent_curation import curate_precedent_transactions
 from .quality import evaluate_data_quality
 from .robustness import compute_robustness_metrics
 from .scenarios import build_valuation_scenarios
@@ -36,6 +37,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
     target_row = select_target_company(company_metrics, config)
     comps = run_comparable_analysis(target_row, company_metrics, normalized.peers)
     precedents = run_precedent_analysis(target_row, normalized.precedents, normalized.filings, company_metrics)
+    precedent_curation = curate_precedent_transactions(target_row, precedents.precedent_table)
     signals = generate_signals(target_row, comps.summary, precedents.summary, config=config)
     quality = evaluate_data_quality(company_metrics, comps.summary, precedents.summary, config=config)
     scenarios = build_valuation_scenarios(target_row, comps.summary, precedents.summary)
@@ -92,6 +94,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "accretion_dilution": acc_dil.summary,
         "lbo_underwriting": lbo.summary,
         "market_data": market_data.summary,
+        "precedent_curation": precedent_curation.summary,
     }
     insights = generate_ai_insights(structured_payload, config.openai_model)
 
@@ -111,6 +114,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "eps_accretion_dilution": acc_dil.summary.get("eps_accretion_dilution"),
         "lbo_irr": lbo.summary.get("irr"),
         "market_data_status": market_data.summary.get("status"),
+        "precedent_curated_count": precedent_curation.summary.get("curated_transaction_count"),
         "blend_stance": blended.summary.get("blend_stance"),
     }
 
@@ -133,6 +137,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         accretion_dilution_summary=acc_dil.summary,
         lbo_summary=lbo.summary,
         market_data_summary=market_data.summary,
+        precedent_curation_summary=precedent_curation.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -146,6 +151,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         accretion_dilution_table=acc_dil.scenario_table,
         lbo_table=lbo.lbo_table,
         market_data_table=market_data.quotes_table,
+        precedent_curation_table=precedent_curation.curated_table,
         quality_table=quality.check_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,

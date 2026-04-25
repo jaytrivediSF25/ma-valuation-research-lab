@@ -137,6 +137,14 @@ class MarketDataSummary(BaseModel):
     error: Optional[str] = None
 
 
+class PrecedentCurationSummary(BaseModel):
+    raw_transaction_count: int = 0
+    curated_transaction_count: int = 0
+    outliers_removed: int = 0
+    curated_median_ev_revenue: Optional[float] = None
+    curated_median_ev_ebitda: Optional[float] = None
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -168,6 +176,7 @@ class FinalReport(BaseModel):
     accretion_dilution: AccretionDilutionSummary
     lbo_underwriting: LBOSummary
     market_data: MarketDataSummary
+    precedent_curation: PrecedentCurationSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str
