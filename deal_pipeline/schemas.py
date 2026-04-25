@@ -168,6 +168,13 @@ class ICPackSummary(BaseModel):
     manifest_path: Optional[str] = None
 
 
+class EvidenceSummary(BaseModel):
+    total_insights: int = 0
+    insights_with_citations: int = 0
+    total_citations: int = 0
+    citation_coverage_pct: float = 0.0
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -204,6 +211,7 @@ class FinalReport(BaseModel):
     lineage: LineageSummary
     validation: ValidationSummary
     ic_pack: ICPackSummary
+    evidence_citations: EvidenceSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str

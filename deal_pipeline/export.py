@@ -14,6 +14,7 @@ from .schemas import (
     ComparableAnalysis,
     DataQuality,
     DCFSummary,
+    EvidenceSummary,
     FinalReport,
     FinancialSnapshot,
     ICPackSummary,
@@ -70,6 +71,7 @@ def _build_summary_sheet(
     lineage_summary: Dict[str, Any],
     validation_summary: Dict[str, Any],
     ic_pack_summary: Dict[str, Any],
+    evidence_summary: Dict[str, Any],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -133,6 +135,7 @@ def _build_summary_sheet(
         ("validation_warn_count", validation_summary.get("validation_warn_count")),
         ("ic_pack_generated", ic_pack_summary.get("generated")),
         ("ic_pack_dir", ic_pack_summary.get("pack_dir")),
+        ("citation_coverage_pct", evidence_summary.get("citation_coverage_pct")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -161,6 +164,7 @@ def export_outputs(
     lineage_summary: Dict[str, Any],
     validation_summary: Dict[str, Any],
     ic_pack_summary: Dict[str, Any],
+    evidence_summary: Dict[str, Any],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -178,6 +182,7 @@ def export_outputs(
     sector_pack_table: pd.DataFrame,
     lineage_table: pd.DataFrame,
     validation_table: pd.DataFrame,
+    evidence_table: pd.DataFrame,
     quality_table: pd.DataFrame,
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
@@ -220,6 +225,7 @@ def export_outputs(
     lineage_set = LineageSummary(**lineage_summary)
     validation_set = ValidationSummary(**validation_summary)
     ic_pack_set = ICPackSummary(**ic_pack_summary)
+    evidence_set = EvidenceSummary(**evidence_summary)
 
     report = FinalReport(
         company={
@@ -246,6 +252,7 @@ def export_outputs(
         lineage=lineage_set,
         validation=validation_set,
         ic_pack=ic_pack_set,
+        evidence_citations=evidence_set,
         insights=insights,
         diagnostics=diagnostics,
         conclusion=insights["conclusion"],
@@ -275,6 +282,7 @@ def export_outputs(
         lineage_summary=lineage_summary,
         validation_summary=validation_summary,
         ic_pack_summary=ic_pack_summary,
+        evidence_summary=evidence_summary,
         insights=insights,
     )
     raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()
@@ -297,6 +305,7 @@ def export_outputs(
         sector_pack_table.to_excel(writer, index=False, sheet_name="sector_pack")
         lineage_table.to_excel(writer, index=False, sheet_name="lineage")
         validation_table.to_excel(writer, index=False, sheet_name="validation")
+        evidence_table.to_excel(writer, index=False, sheet_name="evidence")
         quality_table.to_excel(writer, index=False, sheet_name="quality")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 

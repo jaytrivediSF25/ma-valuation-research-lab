@@ -74,6 +74,7 @@ def build_markdown_memo(
     lineage = structured_report.get("lineage", {})
     validation = structured_report.get("validation", {})
     ic_pack = structured_report.get("ic_pack", {})
+    evidence = structured_report.get("evidence_citations", {})
 
     lines: List[str] = []
     lines.append(f"# Deal Analysis Memo: {company.get('name') or company.get('ticker')}")
@@ -191,6 +192,11 @@ def build_markdown_memo(
     lines.append("")
     lines.append(f"- Generated: {ic_pack.get('generated', False)}")
     lines.append(f"- Pack directory: {ic_pack.get('pack_dir')}")
+    lines.append("")
+    lines.append("## Evidence Citation Layer")
+    lines.append("")
+    lines.append(f"- Citation coverage: {_fmt_pct(evidence.get('citation_coverage_pct'))}")
+    lines.append(f"- Total citations: {evidence.get('total_citations', 0)}")
     lines.append("")
     lines.append("## Data Quality")
     lines.append("")

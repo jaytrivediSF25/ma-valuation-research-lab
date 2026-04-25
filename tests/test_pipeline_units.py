@@ -8,6 +8,7 @@ from deal_pipeline.batch_screen import _score_row
 from deal_pipeline.blended_valuation import build_blended_valuation
 from deal_pipeline.config import PipelineConfig
 from deal_pipeline.dcf import run_dcf_analysis
+from deal_pipeline.evidence import apply_evidence_citations
 from deal_pipeline.insights import generate_signals
 from deal_pipeline.ic_pack import create_ic_pack
 from deal_pipeline.lbo import run_lbo_underwriting
@@ -234,6 +235,13 @@ class PipelineUnitTests(unittest.TestCase):
             dcf_table=pd.DataFrame([{"case": "base"}]),
         )
         self.assertTrue(result.summary["generated"])
+
+    def test_evidence_citation_layer(self) -> None:
+        insights = {"key_insights": ["EV/Revenue is above peer median.", "Revenue growth is strong."], "primary_risk": "x", "conclusion": "y"}
+        out = apply_evidence_citations(insights)
+        self.assertEqual(out.summary["total_insights"], 2)
+        self.assertEqual(out.summary["insights_with_citations"], 2)
+        self.assertGreaterEqual(out.summary["citation_coverage_pct"], 1.0)
 
 
 if __name__ == "__main__":
