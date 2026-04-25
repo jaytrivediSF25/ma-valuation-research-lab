@@ -11,6 +11,7 @@ from .feature_engineering import engineer_features, select_target_company
 from .ingestion import ingest_data
 from .insights import generate_ai_insights, generate_signals
 from .lbo import run_lbo_underwriting
+from .lineage import build_lineage_report
 from .market_data import fetch_market_data_context
 from .memo import build_markdown_memo
 from .normalization import normalize_data
@@ -56,6 +57,16 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         dcf_summary=dcf.summary,
         config=runtime_config,
     )
+    lineage = build_lineage_report(
+        target_row=target_row,
+        additional_sections={
+            "dcf_analysis": dcf.summary,
+            "capital_structure": dcf.capital_structure_summary,
+            "blended_valuation": blended.summary,
+            "accretion_dilution": acc_dil.summary,
+            "lbo_underwriting": lbo.summary,
+        },
+    )
 
     structured_payload = {
         "company": {
@@ -98,6 +109,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "market_data": market_data.summary,
         "precedent_curation": precedent_curation.summary,
         "sector_pack": sector_pack_summary,
+        "lineage": lineage.summary,
     }
     insights = generate_ai_insights(structured_payload, config.openai_model)
 
@@ -119,6 +131,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "market_data_status": market_data.summary.get("status"),
         "precedent_curated_count": precedent_curation.summary.get("curated_transaction_count"),
         "sector_pack": sector_pack_summary.get("sector_pack"),
+        "lineage_row_count": lineage.summary.get("lineage_row_count"),
         "blend_stance": blended.summary.get("blend_stance"),
     }
 
@@ -143,6 +156,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         market_data_summary=market_data.summary,
         precedent_curation_summary=precedent_curation.summary,
         sector_pack_summary=sector_pack_summary,
+        lineage_summary=lineage.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -158,6 +172,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         market_data_table=market_data.quotes_table,
         precedent_curation_table=precedent_curation.curated_table,
         sector_pack_table=sector_pack_table,
+        lineage_table=lineage.lineage_table,
         quality_table=quality.check_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,

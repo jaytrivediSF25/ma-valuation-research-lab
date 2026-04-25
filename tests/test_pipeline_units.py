@@ -9,6 +9,7 @@ from deal_pipeline.config import PipelineConfig
 from deal_pipeline.dcf import run_dcf_analysis
 from deal_pipeline.insights import generate_signals
 from deal_pipeline.lbo import run_lbo_underwriting
+from deal_pipeline.lineage import build_lineage_report
 from deal_pipeline.market_data import fetch_market_data_context
 from deal_pipeline.precedent_curation import curate_precedent_transactions
 from deal_pipeline.quality import evaluate_data_quality
@@ -181,6 +182,24 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertGreaterEqual(summary["override_count"], 1)
         self.assertFalse(table.empty)
         self.assertNotEqual(new_cfg.high_growth_threshold, config.high_growth_threshold)
+
+    def test_lineage_report(self) -> None:
+        target = pd.Series(
+            {
+                "revenue": 100.0,
+                "revenue_growth_yoy": 0.1,
+                "ebitda": 20.0,
+                "ebitda_margin": 0.2,
+                "enterprise_value": 300.0,
+                "ev_revenue": 3.0,
+                "ev_ebitda": 15.0,
+                "implied_share_price_current": 25.0,
+                "source": "unit_test",
+            }
+        )
+        out = build_lineage_report(target, {"dcf_analysis": {"implied_ev_base": 320.0}})
+        self.assertGreaterEqual(out.summary["lineage_row_count"], 9)
+        self.assertIn("metric", out.lineage_table.columns)
 
 
 if __name__ == "__main__":

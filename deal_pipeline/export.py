@@ -17,6 +17,7 @@ from .schemas import (
     FinalReport,
     FinancialSnapshot,
     LBOSummary,
+    LineageSummary,
     MarketDataSummary,
     PrecedentCurationSummary,
     PrecedentAnalysis,
@@ -64,6 +65,7 @@ def _build_summary_sheet(
     market_data_summary: Dict[str, Any],
     precedent_curation_summary: Dict[str, Any],
     sector_pack_summary: Dict[str, Any],
+    lineage_summary: Dict[str, Any],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -122,6 +124,7 @@ def _build_summary_sheet(
         ("precedent_outliers_removed", precedent_curation_summary.get("outliers_removed")),
         ("sector_pack", sector_pack_summary.get("sector_pack")),
         ("sector_pack_overrides", sector_pack_summary.get("override_count")),
+        ("lineage_row_count", lineage_summary.get("lineage_row_count")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -147,6 +150,7 @@ def export_outputs(
     market_data_summary: Dict[str, Any],
     precedent_curation_summary: Dict[str, Any],
     sector_pack_summary: Dict[str, Any],
+    lineage_summary: Dict[str, Any],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -162,6 +166,7 @@ def export_outputs(
     market_data_table: pd.DataFrame,
     precedent_curation_table: pd.DataFrame,
     sector_pack_table: pd.DataFrame,
+    lineage_table: pd.DataFrame,
     quality_table: pd.DataFrame,
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
@@ -201,6 +206,7 @@ def export_outputs(
     market_data_set = MarketDataSummary(**market_data_summary)
     precedent_curation_set = PrecedentCurationSummary(**precedent_curation_summary)
     sector_pack_set = SectorPackSummary(**sector_pack_summary)
+    lineage_set = LineageSummary(**lineage_summary)
 
     report = FinalReport(
         company={
@@ -224,6 +230,7 @@ def export_outputs(
         market_data=market_data_set,
         precedent_curation=precedent_curation_set,
         sector_pack=sector_pack_set,
+        lineage=lineage_set,
         insights=insights,
         diagnostics=diagnostics,
         conclusion=insights["conclusion"],
@@ -250,6 +257,7 @@ def export_outputs(
         market_data_summary=market_data_summary,
         precedent_curation_summary=precedent_curation_summary,
         sector_pack_summary=sector_pack_summary,
+        lineage_summary=lineage_summary,
         insights=insights,
     )
     raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()
@@ -270,6 +278,7 @@ def export_outputs(
         market_data_table.to_excel(writer, index=False, sheet_name="market_data")
         precedent_curation_table.to_excel(writer, index=False, sheet_name="precedent_curated")
         sector_pack_table.to_excel(writer, index=False, sheet_name="sector_pack")
+        lineage_table.to_excel(writer, index=False, sheet_name="lineage")
         quality_table.to_excel(writer, index=False, sheet_name="quality")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 

@@ -150,6 +150,11 @@ class SectorPackSummary(BaseModel):
     override_count: int = 0
 
 
+class LineageSummary(BaseModel):
+    lineage_row_count: int = 0
+    lineage_sections: int = 0
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -183,6 +188,7 @@ class FinalReport(BaseModel):
     market_data: MarketDataSummary
     precedent_curation: PrecedentCurationSummary
     sector_pack: SectorPackSummary
+    lineage: LineageSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str

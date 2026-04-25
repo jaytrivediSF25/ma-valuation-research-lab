@@ -71,6 +71,7 @@ def build_markdown_memo(
     market_data = structured_report.get("market_data", {})
     precedent_curation = structured_report.get("precedent_curation", {})
     sector_pack = structured_report.get("sector_pack", {})
+    lineage = structured_report.get("lineage", {})
 
     lines: List[str] = []
     lines.append(f"# Deal Analysis Memo: {company.get('name') or company.get('ticker')}")
@@ -173,6 +174,11 @@ def build_markdown_memo(
     lines.append("")
     lines.append(f"- Applied pack: {sector_pack.get('sector_pack', 'default')}")
     lines.append(f"- Override count: {sector_pack.get('override_count', 0)}")
+    lines.append("")
+    lines.append("## Audit Lineage")
+    lines.append("")
+    lines.append(f"- Lineage rows generated: {lineage.get('lineage_row_count', 0)}")
+    lines.append(f"- Lineage sections covered: {lineage.get('lineage_sections', 0)}")
     lines.append("")
     lines.append("## Data Quality")
     lines.append("")
