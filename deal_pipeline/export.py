@@ -12,6 +12,7 @@ from .schemas import (
     BlendedValuationSummary,
     CapitalStructureSummary,
     ComparableAnalysis,
+    ContractValidationSummary,
     DataQuality,
     DCFSummary,
     EvidenceSummary,
@@ -72,6 +73,7 @@ def _build_summary_sheet(
     validation_summary: Dict[str, Any],
     ic_pack_summary: Dict[str, Any],
     evidence_summary: Dict[str, Any],
+    contract_validation_summary: Dict[str, Any],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -136,6 +138,9 @@ def _build_summary_sheet(
         ("ic_pack_generated", ic_pack_summary.get("generated")),
         ("ic_pack_dir", ic_pack_summary.get("pack_dir")),
         ("citation_coverage_pct", evidence_summary.get("citation_coverage_pct")),
+        ("contracts_checked", contract_validation_summary.get("contracts_checked")),
+        ("contracts_failed", contract_validation_summary.get("contracts_failed")),
+        ("contracts_skipped", contract_validation_summary.get("contracts_skipped")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -165,6 +170,7 @@ def export_outputs(
     validation_summary: Dict[str, Any],
     ic_pack_summary: Dict[str, Any],
     evidence_summary: Dict[str, Any],
+    contract_validation_summary: Dict[str, Any],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -184,6 +190,7 @@ def export_outputs(
     validation_table: pd.DataFrame,
     evidence_table: pd.DataFrame,
     quality_table: pd.DataFrame,
+    contract_validation_table: pd.DataFrame,
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
 ) -> ExportArtifacts:
@@ -226,6 +233,7 @@ def export_outputs(
     validation_set = ValidationSummary(**validation_summary)
     ic_pack_set = ICPackSummary(**ic_pack_summary)
     evidence_set = EvidenceSummary(**evidence_summary)
+    contract_validation_set = ContractValidationSummary(**contract_validation_summary)
 
     report = FinalReport(
         company={
@@ -253,6 +261,7 @@ def export_outputs(
         validation=validation_set,
         ic_pack=ic_pack_set,
         evidence_citations=evidence_set,
+        contract_validation=contract_validation_set,
         insights=insights,
         diagnostics=diagnostics,
         conclusion=insights["conclusion"],
@@ -283,6 +292,7 @@ def export_outputs(
         validation_summary=validation_summary,
         ic_pack_summary=ic_pack_summary,
         evidence_summary=evidence_summary,
+        contract_validation_summary=contract_validation_summary,
         insights=insights,
     )
     raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()
@@ -307,6 +317,7 @@ def export_outputs(
         validation_table.to_excel(writer, index=False, sheet_name="validation")
         evidence_table.to_excel(writer, index=False, sheet_name="evidence")
         quality_table.to_excel(writer, index=False, sheet_name="quality")
+        contract_validation_table.to_excel(writer, index=False, sheet_name="contracts")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 
     return ExportArtifacts(

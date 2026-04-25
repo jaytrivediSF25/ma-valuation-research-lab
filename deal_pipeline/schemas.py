@@ -100,6 +100,9 @@ class BlendedValuationSummary(BaseModel):
     current_ev: Optional[float] = None
     blend_gap_to_current: Optional[float] = None
     blend_stance: str = "neutral"
+    blend_optimizer_used: bool = False
+    blend_optimizer_status: str = "disabled_or_missing_current_ev"
+    optimized_weights: Dict[str, float] = Field(default_factory=dict)
 
 
 class AccretionDilutionSummary(BaseModel):
@@ -175,6 +178,12 @@ class EvidenceSummary(BaseModel):
     citation_coverage_pct: float = 0.0
 
 
+class ContractValidationSummary(BaseModel):
+    contracts_checked: int = 0
+    contracts_failed: int = 0
+    contracts_skipped: int = 0
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -212,6 +221,7 @@ class FinalReport(BaseModel):
     validation: ValidationSummary
     ic_pack: ICPackSummary
     evidence_citations: EvidenceSummary
+    contract_validation: ContractValidationSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str

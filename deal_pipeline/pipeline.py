@@ -1,11 +1,15 @@
 from dataclasses import dataclass
 from typing import Any, Dict
 
+import pandas as pd
+
 from .accretion_dilution import run_accretion_dilution_analysis
 from .analysis import run_comparable_analysis, run_precedent_analysis
 from .blended_valuation import build_blended_valuation
 from .config import PipelineConfig
+from .contracts import ContractValidationResult, validate_data_contracts
 from .dcf import run_dcf_analysis
+from .duckdb_store import persist_to_duckdb
 from .export import ExportArtifacts, export_outputs
 from .feature_engineering import engineer_features, select_target_company
 from .ingestion import ingest_data
@@ -44,6 +48,16 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
     comps = run_comparable_analysis(target_row, company_metrics, normalized.peers)
     precedents = run_precedent_analysis(target_row, normalized.precedents, normalized.filings, company_metrics)
     precedent_curation = curate_precedent_transactions(target_row, precedents.precedent_table)
+    if config.enable_pandera_validation:
+        contract_validation = validate_data_contracts(
+            company_metrics=company_metrics,
+            precedents_table=precedent_curation.curated_table,
+        )
+    else:
+        contract_validation = ContractValidationResult(
+            summary={"contracts_checked": 0, "contracts_failed": 0, "contracts_skipped": 1},
+            table=pd.DataFrame([{"contract": "pipeline_contracts", "status": "skipped", "detail": "validation_disabled"}]),
+        )
     signals = generate_signals(target_row, comps.summary, precedents.summary, config=runtime_config)
     quality = evaluate_data_quality(company_metrics, comps.summary, precedents.summary, config=runtime_config)
     scenarios = build_valuation_scenarios(target_row, comps.summary, precedents.summary)
@@ -123,6 +137,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "sector_pack": sector_pack_summary,
         "lineage": lineage.summary,
         "validation": validation.summary,
+        "contract_validation": contract_validation.summary,
     }
     insights_raw = generate_ai_insights(structured_payload, config.openai_model)
     evidence = apply_evidence_citations(insights_raw)
@@ -162,6 +177,10 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "ic_pack_dir": ic_pack.summary.get("pack_dir"),
         "citation_coverage_pct": evidence.summary.get("citation_coverage_pct"),
         "blend_stance": blended.summary.get("blend_stance"),
+        "blend_optimizer_status": blended.summary.get("blend_optimizer_status"),
+        "contracts_checked": contract_validation.summary.get("contracts_checked"),
+        "contracts_failed": contract_validation.summary.get("contracts_failed"),
+        "contracts_skipped": contract_validation.summary.get("contracts_skipped"),
     }
 
     exports = export_outputs(
@@ -189,6 +208,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         validation_summary=validation.summary,
         ic_pack_summary=ic_pack.summary,
         evidence_summary=evidence.summary,
+        contract_validation_summary=contract_validation.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -208,9 +228,28 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         validation_table=validation.validation_table,
         evidence_table=evidence.evidence_table,
         quality_table=quality.check_table,
+        contract_validation_table=contract_validation.table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,
     )
+
+    if config.enable_duckdb_store:
+        duckdb_path = config.duckdb_path or (config.output_dir / "warehouse" / "deal_pipeline.duckdb")
+        duckdb_result = persist_to_duckdb(
+            db_path=duckdb_path,
+            tables={
+                "company_metrics": company_metrics,
+                "comps": comps.peer_table,
+                "precedents_curated": precedent_curation.curated_table,
+                "dcf": dcf.dcf_table,
+                "blend": blended.blend_table,
+                "validation": validation.validation_table,
+                "evidence": evidence.evidence_table,
+            },
+        )
+        diagnostic["duckdb_path"] = str(duckdb_result.db_path)
+        diagnostic["duckdb_tables_written"] = len(duckdb_result.tables_written)
+        diagnostic["duckdb_rows_written"] = int(sum(duckdb_result.tables_written.values())) if duckdb_result.tables_written else 0
 
     if config.enable_markdown_memo:
         memo_path = build_markdown_memo(

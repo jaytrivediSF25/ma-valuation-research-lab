@@ -60,6 +60,10 @@ class PipelineConfig:
     enable_market_data: bool = False
     market_data_lookback_days: int = 180
     batch_top_n: int = 25
+    enable_duckdb_store: bool = True
+    duckdb_path: Optional[Path] = None
+    enable_pandera_validation: bool = True
+    enable_blend_optimizer: bool = True
 
     def ensure_directories(self) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,9 @@ from deal_pipeline.automation import _load_watchlist
 from deal_pipeline.batch_screen import _score_row
 from deal_pipeline.blended_valuation import build_blended_valuation
 from deal_pipeline.config import PipelineConfig
+from deal_pipeline.contracts import validate_data_contracts
 from deal_pipeline.dcf import run_dcf_analysis
+from deal_pipeline.duckdb_store import persist_to_duckdb
 from deal_pipeline.evidence import apply_evidence_citations
 from deal_pipeline.insights import generate_signals
 from deal_pipeline.ic_pack import create_ic_pack
@@ -113,6 +115,7 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertIsNotNone(blend.summary["blended_implied_ev"])
         self.assertIn(blend.summary["blend_stance"], {"upside", "neutral", "downside"})
         self.assertEqual(len(blend.blend_table), 4)
+        self.assertIn("blend_optimizer_status", blend.summary)
 
     def test_accretion_dilution(self) -> None:
         config = PipelineConfig(data_dir=Path("."), output_dir=Path("./output"), buyer_ticker="BUYR")
@@ -250,6 +253,21 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertEqual(out.summary["total_insights"], 2)
         self.assertEqual(out.summary["insights_with_citations"], 2)
         self.assertGreaterEqual(out.summary["citation_coverage_pct"], 1.0)
+
+    def test_contract_validation_fallback_or_pass(self) -> None:
+        metrics = pd.DataFrame([{"ticker": "AAA", "revenue": 100.0, "ebitda": 20.0, "enterprise_value": 350.0}])
+        precedents = pd.DataFrame([{"ev_revenue": 3.5, "ev_ebitda": 14.0}])
+        out = validate_data_contracts(metrics, precedents)
+        self.assertIn(out.summary["contracts_skipped"], {0, 1})
+        self.assertIn("status", out.table.columns)
+
+    def test_duckdb_store_graceful(self) -> None:
+        db_path = Path("./output/test_pipeline.duckdb")
+        out = persist_to_duckdb(db_path, {"tbl_a": pd.DataFrame([{"x": 1}, {"x": 2}])})
+        self.assertEqual(out.db_path, db_path)
+        self.assertIsInstance(out.tables_written, dict)
+        if db_path.exists():
+            db_path.unlink()
 
 
 if __name__ == "__main__":

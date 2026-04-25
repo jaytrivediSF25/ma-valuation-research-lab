@@ -9,6 +9,9 @@ This repository turns fragmented SEC/regulatory and financial datasets into a re
 - DCF and blended valuation synthesis,
 - statistical robustness diagnostics,
 - machine-readable + analyst-readable outputs.
+- optional API + orchestration surfaces (FastAPI + Prefect),
+- optional local analytical warehouse persistence (DuckDB),
+- optional contract validation and optimizer layers (Pandera + CVXPY).
 
 ---
 
@@ -39,6 +42,10 @@ This project addresses all 4 by structuring the workflow into formal pipeline st
 
 ```text
 .
+├── app/
+│   └── main.py
+├── flows/
+│   └── pipeline_flow.py
 ├── analyze_deal.py
 ├── requirements.txt
 ├── tests/
@@ -231,6 +238,7 @@ Sheets:
 - `robustness`
 - `blend`
 - `quality`
+- `contracts`
 - `raw_data`
 
 ### Markdown memo
@@ -257,6 +265,40 @@ Narrative investment memo with:
 ### Growth
 
 - `Revenue Growth YoY = (Revenue_t - Revenue_t-1) / Revenue_t-1`
+
+---
+
+## 7. Runtime Interfaces
+
+### 7.1 CLI (primary)
+
+```bash
+python analyze_deal.py --data-dir ./data --output-dir ./output --target-ticker ABT
+```
+
+Useful runtime toggles:
+
+- `--disable-duckdb-store`
+- `--duckdb-path ./output/warehouse/deal_pipeline.duckdb`
+- `--disable-pandera-validation`
+- `--disable-blend-optimizer`
+
+### 7.2 API (FastAPI)
+
+```bash
+uvicorn app.main:app --reload
+```
+
+- `GET /health` for service liveness
+- `POST /run` to execute the full pipeline and return paths + diagnostics
+
+### 7.3 Orchestration (Prefect)
+
+```bash
+python flows/pipeline_flow.py
+```
+
+This executes the same production pipeline through a flow wrapper that can be scheduled/deployed in Prefect.
 
 ### DCF framework
 
@@ -394,4 +436,3 @@ Current test coverage validates:
 Current package version:
 
 - `deal_pipeline.__version__ = 3.0.0`
-

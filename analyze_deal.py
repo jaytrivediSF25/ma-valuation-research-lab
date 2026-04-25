@@ -69,6 +69,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lbo-mezz-interest-rate", type=float, default=0.11, help="Mezz debt interest rate in LBO")
     parser.add_argument("--enable-market-data", action="store_true", help="Enable live market data connectors")
     parser.add_argument("--market-data-lookback-days", type=int, default=180, help="Lookback window for market data context")
+    parser.add_argument("--duckdb-path", default=None, help="Optional DuckDB output path for persisted analytical tables")
+    parser.add_argument("--disable-duckdb-store", action="store_true", help="Disable persistence of pipeline tables to DuckDB")
+    parser.add_argument("--disable-pandera-validation", action="store_true", help="Disable Pandera-based contract checks")
+    parser.add_argument("--disable-blend-optimizer", action="store_true", help="Disable optimization step in blended valuation weights")
     parser.add_argument(
         "--disable-markdown-memo",
         action="store_true",
@@ -131,6 +135,10 @@ def main() -> None:
         enable_market_data=args.enable_market_data,
         market_data_lookback_days=args.market_data_lookback_days,
         batch_top_n=args.batch_top_n,
+        duckdb_path=Path(args.duckdb_path).resolve() if args.duckdb_path else None,
+        enable_duckdb_store=not args.disable_duckdb_store,
+        enable_pandera_validation=not args.disable_pandera_validation,
+        enable_blend_optimizer=not args.disable_blend_optimizer,
         enable_markdown_memo=not args.disable_markdown_memo,
     )
 
