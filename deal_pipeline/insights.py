@@ -98,6 +98,7 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     blend = payload.get("blended_valuation", {})
     acc_dil = payload.get("accretion_dilution", {})
     lbo = payload.get("lbo_underwriting", {})
+    market_data = payload.get("market_data", {})
     robustness = payload.get("robustness", {})
 
     insights = []
@@ -137,6 +138,8 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     lbo_irr = lbo.get("irr")
     if lbo_irr is not None:
         insights.append(f"LBO underwriting indicates an IRR of {lbo_irr:.1%} under base assumptions.")
+    if market_data.get("status") == "ok" and market_data.get("target_price") is not None:
+        insights.append(f"Live market connector reports target spot price near ${market_data['target_price']:,.2f}.")
     blend_gap = blend.get("blend_gap_to_current")
     if blend_gap is not None:
         insights.append(f"Blended valuation synthesis indicates {blend_gap:+.1%} relative value versus current EV.")

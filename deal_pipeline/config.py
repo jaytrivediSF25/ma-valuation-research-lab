@@ -57,6 +57,8 @@ class PipelineConfig:
     lbo_mezz_debt_multiple: float = 1.0
     lbo_senior_interest_rate: float = 0.075
     lbo_mezz_interest_rate: float = 0.11
+    enable_market_data: bool = False
+    market_data_lookback_days: int = 180
 
     def ensure_directories(self) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)

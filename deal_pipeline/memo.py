@@ -68,6 +68,7 @@ def build_markdown_memo(
     blend = structured_report.get("blended_valuation", {})
     acc_dil = structured_report.get("accretion_dilution", {})
     lbo = structured_report.get("lbo_underwriting", {})
+    market_data = structured_report.get("market_data", {})
 
     lines: List[str] = []
     lines.append(f"# Deal Analysis Memo: {company.get('name') or company.get('ticker')}")
@@ -153,6 +154,12 @@ def build_markdown_memo(
     lines.append(f"- Entry equity / Exit equity: {_fmt_money(lbo.get('entry_equity'))} / {_fmt_money(lbo.get('exit_equity'))}")
     lines.append(f"- MOIC / IRR: {_fmt_mult(lbo.get('moic'))} / {_fmt_pct(lbo.get('irr'))}")
     lines.append(f"- Exit net leverage: {_fmt_mult(lbo.get('exit_net_leverage'))}")
+    lines.append("")
+    lines.append("## Live Market Data")
+    lines.append("")
+    lines.append(f"- Connector status: {market_data.get('status')}")
+    lines.append(f"- Target live price: {_fmt_money(market_data.get('target_price'))}")
+    lines.append(f"- Target live market cap: {_fmt_money(market_data.get('target_market_cap_live'))}")
     lines.append("")
     lines.append("## Data Quality")
     lines.append("")

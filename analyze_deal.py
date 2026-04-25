@@ -60,6 +60,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lbo-mezz-debt-multiple", type=float, default=1.0, help="Mezz debt at entry as EBITDA multiple")
     parser.add_argument("--lbo-senior-interest-rate", type=float, default=0.075, help="Senior debt interest rate in LBO")
     parser.add_argument("--lbo-mezz-interest-rate", type=float, default=0.11, help="Mezz debt interest rate in LBO")
+    parser.add_argument("--enable-market-data", action="store_true", help="Enable live market data connectors")
+    parser.add_argument("--market-data-lookback-days", type=int, default=180, help="Lookback window for market data context")
     parser.add_argument(
         "--disable-markdown-memo",
         action="store_true",
@@ -119,6 +121,8 @@ def main() -> None:
         lbo_mezz_debt_multiple=args.lbo_mezz_debt_multiple,
         lbo_senior_interest_rate=args.lbo_senior_interest_rate,
         lbo_mezz_interest_rate=args.lbo_mezz_interest_rate,
+        enable_market_data=args.enable_market_data,
+        market_data_lookback_days=args.market_data_lookback_days,
         enable_markdown_memo=not args.disable_markdown_memo,
     )
 

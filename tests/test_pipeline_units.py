@@ -9,6 +9,7 @@ from deal_pipeline.config import PipelineConfig
 from deal_pipeline.dcf import run_dcf_analysis
 from deal_pipeline.insights import generate_signals
 from deal_pipeline.lbo import run_lbo_underwriting
+from deal_pipeline.market_data import fetch_market_data_context
 from deal_pipeline.quality import evaluate_data_quality
 from deal_pipeline.scenarios import build_valuation_scenarios
 
@@ -149,6 +150,13 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertIsNotNone(out.summary["moic"])
         self.assertIsNotNone(out.summary["irr"])
         self.assertFalse(out.lbo_table.empty)
+
+    def test_market_data_disabled(self) -> None:
+        config = PipelineConfig(data_dir=Path("."), output_dir=Path("./output"), enable_market_data=False)
+        target = pd.Series({"ticker": "ABT"})
+        comps = pd.DataFrame([{"ticker": "MDT"}])
+        out = fetch_market_data_context(target, comps, config)
+        self.assertEqual(out.summary["status"], "disabled")
 
 
 if __name__ == "__main__":

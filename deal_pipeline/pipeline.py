@@ -11,6 +11,7 @@ from .feature_engineering import engineer_features, select_target_company
 from .ingestion import ingest_data
 from .insights import generate_ai_insights, generate_signals
 from .lbo import run_lbo_underwriting
+from .market_data import fetch_market_data_context
 from .memo import build_markdown_memo
 from .normalization import normalize_data
 from .quality import evaluate_data_quality
@@ -42,6 +43,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
     robustness = compute_robustness_metrics(comps.peer_table, precedents.precedent_table, target_row)
     acc_dil = run_accretion_dilution_analysis(target_row, company_metrics, config=config)
     lbo = run_lbo_underwriting(target_row, config=config)
+    market_data = fetch_market_data_context(target_row, comps.peer_table, config=config)
     blended = build_blended_valuation(
         target_row=target_row,
         comps_summary=comps.summary,
@@ -89,6 +91,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "blended_valuation": blended.summary,
         "accretion_dilution": acc_dil.summary,
         "lbo_underwriting": lbo.summary,
+        "market_data": market_data.summary,
     }
     insights = generate_ai_insights(structured_payload, config.openai_model)
 
@@ -107,6 +110,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "dcf_implied_share_price_base": dcf.summary.get("implied_share_price_base"),
         "eps_accretion_dilution": acc_dil.summary.get("eps_accretion_dilution"),
         "lbo_irr": lbo.summary.get("irr"),
+        "market_data_status": market_data.summary.get("status"),
         "blend_stance": blended.summary.get("blend_stance"),
     }
 
@@ -128,6 +132,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         blended_valuation_summary=blended.summary,
         accretion_dilution_summary=acc_dil.summary,
         lbo_summary=lbo.summary,
+        market_data_summary=market_data.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -140,6 +145,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         blend_table=blended.blend_table,
         accretion_dilution_table=acc_dil.scenario_table,
         lbo_table=lbo.lbo_table,
+        market_data_table=market_data.quotes_table,
         quality_table=quality.check_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,

@@ -127,6 +127,16 @@ class LBOSummary(BaseModel):
     entry_leverage: Optional[float] = None
 
 
+class MarketDataSummary(BaseModel):
+    status: str
+    target_ticker: Optional[str] = None
+    target_price: Optional[float] = None
+    target_market_cap_live: Optional[float] = None
+    peer_price_median: Optional[float] = None
+    symbols_queried: Optional[int] = None
+    error: Optional[str] = None
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -157,6 +167,7 @@ class FinalReport(BaseModel):
     blended_valuation: BlendedValuationSummary
     accretion_dilution: AccretionDilutionSummary
     lbo_underwriting: LBOSummary
+    market_data: MarketDataSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str
