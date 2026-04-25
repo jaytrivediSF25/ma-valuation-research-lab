@@ -13,6 +13,7 @@ from deal_pipeline.market_data import fetch_market_data_context
 from deal_pipeline.precedent_curation import curate_precedent_transactions
 from deal_pipeline.quality import evaluate_data_quality
 from deal_pipeline.scenarios import build_valuation_scenarios
+from deal_pipeline.sector_packs import apply_sector_pack
 
 
 class PipelineUnitTests(unittest.TestCase):
@@ -172,6 +173,14 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertEqual(out.summary["raw_transaction_count"], 3)
         self.assertIn("relevance_score", out.curated_table.columns)
         self.assertGreaterEqual(out.summary["curated_transaction_count"], 1)
+
+    def test_sector_pack_application(self) -> None:
+        config = PipelineConfig(data_dir=Path("."), output_dir=Path("./output"))
+        new_cfg, summary, table = apply_sector_pack(config, "Healthcare")
+        self.assertEqual(summary["sector_pack"], "healthcare")
+        self.assertGreaterEqual(summary["override_count"], 1)
+        self.assertFalse(table.empty)
+        self.assertNotEqual(new_cfg.high_growth_threshold, config.high_growth_threshold)
 
 
 if __name__ == "__main__":

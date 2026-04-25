@@ -70,6 +70,7 @@ def build_markdown_memo(
     lbo = structured_report.get("lbo_underwriting", {})
     market_data = structured_report.get("market_data", {})
     precedent_curation = structured_report.get("precedent_curation", {})
+    sector_pack = structured_report.get("sector_pack", {})
 
     lines: List[str] = []
     lines.append(f"# Deal Analysis Memo: {company.get('name') or company.get('ticker')}")
@@ -167,6 +168,11 @@ def build_markdown_memo(
     lines.append(f"- Raw precedents: {precedent_curation.get('raw_transaction_count', 0)}")
     lines.append(f"- Curated precedents: {precedent_curation.get('curated_transaction_count', 0)}")
     lines.append(f"- Outliers removed: {precedent_curation.get('outliers_removed', 0)}")
+    lines.append("")
+    lines.append("## Sector Model Pack")
+    lines.append("")
+    lines.append(f"- Applied pack: {sector_pack.get('sector_pack', 'default')}")
+    lines.append(f"- Override count: {sector_pack.get('override_count', 0)}")
     lines.append("")
     lines.append("## Data Quality")
     lines.append("")

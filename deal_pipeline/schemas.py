@@ -145,6 +145,11 @@ class PrecedentCurationSummary(BaseModel):
     curated_median_ev_ebitda: Optional[float] = None
 
 
+class SectorPackSummary(BaseModel):
+    sector_pack: str = "default"
+    override_count: int = 0
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -177,6 +182,7 @@ class FinalReport(BaseModel):
     lbo_underwriting: LBOSummary
     market_data: MarketDataSummary
     precedent_curation: PrecedentCurationSummary
+    sector_pack: SectorPackSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str

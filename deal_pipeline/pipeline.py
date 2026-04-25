@@ -18,6 +18,7 @@ from .precedent_curation import curate_precedent_transactions
 from .quality import evaluate_data_quality
 from .robustness import compute_robustness_metrics
 from .scenarios import build_valuation_scenarios
+from .sector_packs import apply_sector_pack
 
 
 @dataclass
@@ -35,24 +36,25 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         raise RuntimeError("No engineered company metrics available. Check input datasets in ./data.")
 
     target_row = select_target_company(company_metrics, config)
+    runtime_config, sector_pack_summary, sector_pack_table = apply_sector_pack(config, str(target_row.get("sector") or ""))
     comps = run_comparable_analysis(target_row, company_metrics, normalized.peers)
     precedents = run_precedent_analysis(target_row, normalized.precedents, normalized.filings, company_metrics)
     precedent_curation = curate_precedent_transactions(target_row, precedents.precedent_table)
-    signals = generate_signals(target_row, comps.summary, precedents.summary, config=config)
-    quality = evaluate_data_quality(company_metrics, comps.summary, precedents.summary, config=config)
+    signals = generate_signals(target_row, comps.summary, precedents.summary, config=runtime_config)
+    quality = evaluate_data_quality(company_metrics, comps.summary, precedents.summary, config=runtime_config)
     scenarios = build_valuation_scenarios(target_row, comps.summary, precedents.summary)
-    dcf = run_dcf_analysis(target_row, config=config)
+    dcf = run_dcf_analysis(target_row, config=runtime_config)
     robustness = compute_robustness_metrics(comps.peer_table, precedents.precedent_table, target_row)
-    acc_dil = run_accretion_dilution_analysis(target_row, company_metrics, config=config)
-    lbo = run_lbo_underwriting(target_row, config=config)
-    market_data = fetch_market_data_context(target_row, comps.peer_table, config=config)
+    acc_dil = run_accretion_dilution_analysis(target_row, company_metrics, config=runtime_config)
+    lbo = run_lbo_underwriting(target_row, config=runtime_config)
+    market_data = fetch_market_data_context(target_row, comps.peer_table, config=runtime_config)
     blended = build_blended_valuation(
         target_row=target_row,
         comps_summary=comps.summary,
         precedents_summary=precedents.summary,
         scenarios_summary=scenarios.summary,
         dcf_summary=dcf.summary,
-        config=config,
+        config=runtime_config,
     )
 
     structured_payload = {
@@ -95,6 +97,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "lbo_underwriting": lbo.summary,
         "market_data": market_data.summary,
         "precedent_curation": precedent_curation.summary,
+        "sector_pack": sector_pack_summary,
     }
     insights = generate_ai_insights(structured_payload, config.openai_model)
 
@@ -115,6 +118,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "lbo_irr": lbo.summary.get("irr"),
         "market_data_status": market_data.summary.get("status"),
         "precedent_curated_count": precedent_curation.summary.get("curated_transaction_count"),
+        "sector_pack": sector_pack_summary.get("sector_pack"),
         "blend_stance": blended.summary.get("blend_stance"),
     }
 
@@ -138,6 +142,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         lbo_summary=lbo.summary,
         market_data_summary=market_data.summary,
         precedent_curation_summary=precedent_curation.summary,
+        sector_pack_summary=sector_pack_summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -152,6 +157,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         lbo_table=lbo.lbo_table,
         market_data_table=market_data.quotes_table,
         precedent_curation_table=precedent_curation.curated_table,
+        sector_pack_table=sector_pack_table,
         quality_table=quality.check_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,
