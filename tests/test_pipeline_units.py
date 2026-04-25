@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 from deal_pipeline.accretion_dilution import run_accretion_dilution_analysis
+from deal_pipeline.batch_screen import _score_row
 from deal_pipeline.blended_valuation import build_blended_valuation
 from deal_pipeline.config import PipelineConfig
 from deal_pipeline.dcf import run_dcf_analysis
@@ -200,6 +201,11 @@ class PipelineUnitTests(unittest.TestCase):
         out = build_lineage_report(target, {"dcf_analysis": {"implied_ev_base": 320.0}})
         self.assertGreaterEqual(out.summary["lineage_row_count"], 9)
         self.assertIn("metric", out.lineage_table.columns)
+
+    def test_batch_score_row(self) -> None:
+        s1 = _score_row({"blend_gap_to_current": 0.2, "data_quality_score": 80, "risk_flag_count": 1})
+        s2 = _score_row({"blend_gap_to_current": -0.1, "data_quality_score": 60, "risk_flag_count": 4})
+        self.assertGreater(s1, s2)
 
 
 if __name__ == "__main__":

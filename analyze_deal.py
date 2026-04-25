@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 
 from deal_pipeline import PipelineConfig, run_pipeline
+from deal_pipeline.batch_screen import run_portfolio_batch_screen
 
 
 def parse_args() -> argparse.Namespace:
@@ -13,6 +14,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target-cik", default=None, help="Optional target CIK")
     parser.add_argument("--target-company", default=None, help="Optional target company name")
     parser.add_argument("--openai-model", default="gpt-4o-mini", help="OpenAI model for insights")
+    parser.add_argument("--batch-screen", action="store_true", help="Run portfolio batch screening mode")
+    parser.add_argument("--batch-top-n", type=int, default=25, help="Top-N universe size for batch screening")
     parser.add_argument(
         "--max-raw-rows-for-excel",
         type=int,
@@ -123,8 +126,17 @@ def main() -> None:
         lbo_mezz_interest_rate=args.lbo_mezz_interest_rate,
         enable_market_data=args.enable_market_data,
         market_data_lookback_days=args.market_data_lookback_days,
+        batch_top_n=args.batch_top_n,
         enable_markdown_memo=not args.disable_markdown_memo,
     )
+
+    if args.batch_screen:
+        batch = run_portfolio_batch_screen(config)
+        print("Batch screen complete.")
+        print(f"Screen CSV: {batch.csv_path}")
+        print(f"Screen JSON: {batch.json_path}")
+        print(f"Rows: {batch.rows}")
+        return
 
     result = run_pipeline(config)
     artifacts = result.export_artifacts

@@ -59,6 +59,7 @@ class PipelineConfig:
     lbo_mezz_interest_rate: float = 0.11
     enable_market_data: bool = False
     market_data_lookback_days: int = 180
+    batch_top_n: int = 25
 
     def ensure_directories(self) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)
