@@ -96,6 +96,7 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     dcf = payload.get("dcf_analysis", {})
     capital_structure = payload.get("capital_structure", {})
     blend = payload.get("blended_valuation", {})
+    acc_dil = payload.get("accretion_dilution", {})
     robustness = payload.get("robustness", {})
 
     insights = []
@@ -129,6 +130,9 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     tax_shield = capital_structure.get("tax_shield_pv_base")
     if tax_shield is not None:
         insights.append(f"Projected debt tax shield contributes approximately ${tax_shield:,.0f} to valuation support.")
+    eps_ad = acc_dil.get("eps_accretion_dilution")
+    if eps_ad is not None:
+        insights.append(f"Pro forma transaction model indicates {eps_ad:+.1%} EPS impact in the base case.")
     blend_gap = blend.get("blend_gap_to_current")
     if blend_gap is not None:
         insights.append(f"Blended valuation synthesis indicates {blend_gap:+.1%} relative value versus current EV.")

@@ -8,6 +8,7 @@ import pandas as pd
 
 from .config import PipelineConfig
 from .schemas import (
+    AccretionDilutionSummary,
     BlendedValuationSummary,
     CapitalStructureSummary,
     ComparableAnalysis,
@@ -54,6 +55,7 @@ def _build_summary_sheet(
     capital_structure_summary: Dict[str, Any],
     robustness_summary: Dict[str, Any],
     blended_valuation_summary: Dict[str, Any],
+    accretion_dilution_summary: Dict[str, Any],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -101,6 +103,8 @@ def _build_summary_sheet(
         ("blended_implied_ev", blended_valuation_summary.get("blended_implied_ev")),
         ("blend_gap_to_current", blended_valuation_summary.get("blend_gap_to_current")),
         ("blend_stance", blended_valuation_summary.get("blend_stance")),
+        ("accretion_dilution_pct", accretion_dilution_summary.get("eps_accretion_dilution")),
+        ("proforma_net_leverage", accretion_dilution_summary.get("proforma_net_leverage")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -121,6 +125,7 @@ def export_outputs(
     capital_structure_summary: Dict[str, Any],
     robustness_summary: Dict[str, Any],
     blended_valuation_summary: Dict[str, Any],
+    accretion_dilution_summary: Dict[str, Any],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -131,6 +136,7 @@ def export_outputs(
     capital_bridge_table: pd.DataFrame,
     robustness_table: pd.DataFrame,
     blend_table: pd.DataFrame,
+    accretion_dilution_table: pd.DataFrame,
     quality_table: pd.DataFrame,
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
@@ -165,6 +171,7 @@ def export_outputs(
     capital_structure_set = CapitalStructureSummary(**capital_structure_summary)
     robustness_set = RobustnessSummary(**robustness_summary)
     blend_set = BlendedValuationSummary(**blended_valuation_summary)
+    acc_dil_set = AccretionDilutionSummary(**accretion_dilution_summary)
 
     report = FinalReport(
         company={
@@ -183,6 +190,7 @@ def export_outputs(
         capital_structure=capital_structure_set,
         robustness=robustness_set,
         blended_valuation=blend_set,
+        accretion_dilution=acc_dil_set,
         insights=insights,
         diagnostics=diagnostics,
         conclusion=insights["conclusion"],
@@ -204,6 +212,7 @@ def export_outputs(
         capital_structure_summary=capital_structure_summary,
         robustness_summary=robustness_summary,
         blended_valuation_summary=blended_valuation_summary,
+        accretion_dilution_summary=accretion_dilution_summary,
         insights=insights,
     )
     raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()
@@ -219,6 +228,7 @@ def export_outputs(
         capital_bridge_table.to_excel(writer, index=False, sheet_name="cap_bridge")
         robustness_table.to_excel(writer, index=False, sheet_name="robustness")
         blend_table.to_excel(writer, index=False, sheet_name="blend")
+        accretion_dilution_table.to_excel(writer, index=False, sheet_name="acc_dil")
         quality_table.to_excel(writer, index=False, sheet_name="quality")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 

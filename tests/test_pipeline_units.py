@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from deal_pipeline.accretion_dilution import run_accretion_dilution_analysis
 from deal_pipeline.blended_valuation import build_blended_valuation
 from deal_pipeline.config import PipelineConfig
 from deal_pipeline.dcf import run_dcf_analysis
@@ -102,6 +103,42 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertIsNotNone(blend.summary["blended_implied_ev"])
         self.assertIn(blend.summary["blend_stance"], {"upside", "neutral", "downside"})
         self.assertEqual(len(blend.blend_table), 4)
+
+    def test_accretion_dilution(self) -> None:
+        config = PipelineConfig(data_dir=Path("."), output_dir=Path("./output"), buyer_ticker="BUYR")
+        company_metrics = pd.DataFrame(
+            [
+                {
+                    "ticker": "BUYR",
+                    "enterprise_value": 15000.0,
+                    "market_cap": 13000.0,
+                    "revenue": 4000.0,
+                    "ebitda": 900.0,
+                    "total_debt": 2500.0,
+                    "cash": 600.0,
+                    "shares_outstanding": 100.0,
+                    "interest_expense": 150.0,
+                    "implied_share_price_current": 130.0,
+                },
+                {
+                    "ticker": "TGT",
+                    "enterprise_value": 5000.0,
+                    "market_cap": 4300.0,
+                    "revenue": 1800.0,
+                    "ebitda": 360.0,
+                    "total_debt": 900.0,
+                    "cash": 200.0,
+                    "shares_outstanding": 40.0,
+                    "interest_expense": 55.0,
+                    "implied_share_price_current": 107.5,
+                },
+            ]
+        )
+        target = company_metrics[company_metrics["ticker"] == "TGT"].iloc[0]
+        out = run_accretion_dilution_analysis(target, company_metrics, config)
+        self.assertIsNotNone(out.summary["eps_accretion_dilution"])
+        self.assertIsNotNone(out.summary["proforma_net_leverage"])
+        self.assertEqual(len(out.scenario_table), 3)
 
 
 if __name__ == "__main__":

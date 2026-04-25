@@ -38,6 +38,15 @@ class PipelineConfig:
     blend_weight_precedents: float = 0.25
     blend_weight_scenarios: float = 0.20
     blend_weight_dcf: float = 0.20
+    buyer_ticker: Optional[str] = None
+    deal_premium_pct: float = 0.25
+    synergy_ebitda_pct_target: float = 0.05
+    financing_debt_pct: float = 0.50
+    financing_cash_pct: float = 0.20
+    financing_equity_pct: float = 0.30
+    assumed_interest_rate: float = 0.06
+    assumed_buyer_pe: float = 18.0
+    integration_cost_pct_revenue: float = 0.01
 
     def ensure_directories(self) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)

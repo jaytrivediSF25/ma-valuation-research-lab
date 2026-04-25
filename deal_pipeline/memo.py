@@ -66,6 +66,7 @@ def build_markdown_memo(
     capital_structure = structured_report.get("capital_structure", {})
     robustness = structured_report.get("robustness", {})
     blend = structured_report.get("blended_valuation", {})
+    acc_dil = structured_report.get("accretion_dilution", {})
 
     lines: List[str] = []
     lines.append(f"# Deal Analysis Memo: {company.get('name') or company.get('ticker')}")
@@ -137,6 +138,13 @@ def build_markdown_memo(
     lines.append(f"- Blended implied EV: {_fmt_money(blend.get('blended_implied_ev'))}")
     lines.append(f"- Gap vs current EV: {_fmt_pct(blend.get('blend_gap_to_current'))}")
     lines.append(f"- Synthesis stance: {blend.get('blend_stance', 'neutral')}")
+    lines.append("")
+    lines.append("## Accretion / Dilution")
+    lines.append("")
+    lines.append(f"- Buyer ticker: {acc_dil.get('buyer_ticker')}")
+    lines.append(f"- Deal enterprise value: {_fmt_money(acc_dil.get('deal_enterprise_value'))}")
+    lines.append(f"- EPS accretion/dilution: {_fmt_pct(acc_dil.get('eps_accretion_dilution'))}")
+    lines.append(f"- Pro forma net leverage: {_fmt_mult(acc_dil.get('proforma_net_leverage'))}")
     lines.append("")
     lines.append("## Data Quality")
     lines.append("")

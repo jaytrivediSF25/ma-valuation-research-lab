@@ -102,6 +102,20 @@ class BlendedValuationSummary(BaseModel):
     blend_stance: str = "neutral"
 
 
+class AccretionDilutionSummary(BaseModel):
+    buyer_ticker: Optional[str] = None
+    target_ticker: Optional[str] = None
+    deal_enterprise_value: Optional[float] = None
+    debt_funding: Optional[float] = None
+    cash_funding: Optional[float] = None
+    equity_funding: Optional[float] = None
+    shares_issued: Optional[float] = None
+    buyer_eps: Optional[float] = None
+    proforma_eps: Optional[float] = None
+    eps_accretion_dilution: Optional[float] = None
+    proforma_net_leverage: Optional[float] = None
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -130,6 +144,7 @@ class FinalReport(BaseModel):
     capital_structure: CapitalStructureSummary
     robustness: RobustnessSummary
     blended_valuation: BlendedValuationSummary
+    accretion_dilution: AccretionDilutionSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str

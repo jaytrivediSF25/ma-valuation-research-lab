@@ -42,6 +42,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--blend-weight-precedents", type=float, default=0.25, help="Blend weight assigned to precedents anchor")
     parser.add_argument("--blend-weight-scenarios", type=float, default=0.20, help="Blend weight assigned to scenarios anchor")
     parser.add_argument("--blend-weight-dcf", type=float, default=0.20, help="Blend weight assigned to DCF anchor")
+    parser.add_argument("--buyer-ticker", default=None, help="Optional buyer ticker for accretion/dilution model")
+    parser.add_argument("--deal-premium-pct", type=float, default=0.25, help="Premium percentage applied to target EV in deal model")
+    parser.add_argument("--synergy-ebitda-pct-target", type=float, default=0.05, help="Synergy EBITDA as %% of target EBITDA")
+    parser.add_argument("--financing-debt-pct", type=float, default=0.50, help="Debt financing share of deal funds")
+    parser.add_argument("--financing-cash-pct", type=float, default=0.20, help="Cash financing share of deal funds")
+    parser.add_argument("--financing-equity-pct", type=float, default=0.30, help="Equity financing share of deal funds")
+    parser.add_argument("--assumed-interest-rate", type=float, default=0.06, help="Interest rate used for incremental acquisition debt")
+    parser.add_argument("--integration-cost-pct-revenue", type=float, default=0.01, help="One-time integration cost as %% of target revenue")
     parser.add_argument(
         "--disable-markdown-memo",
         action="store_true",
@@ -83,6 +91,14 @@ def main() -> None:
         blend_weight_precedents=args.blend_weight_precedents,
         blend_weight_scenarios=args.blend_weight_scenarios,
         blend_weight_dcf=args.blend_weight_dcf,
+        buyer_ticker=args.buyer_ticker,
+        deal_premium_pct=args.deal_premium_pct,
+        synergy_ebitda_pct_target=args.synergy_ebitda_pct_target,
+        financing_debt_pct=args.financing_debt_pct,
+        financing_cash_pct=args.financing_cash_pct,
+        financing_equity_pct=args.financing_equity_pct,
+        assumed_interest_rate=args.assumed_interest_rate,
+        integration_cost_pct_revenue=args.integration_cost_pct_revenue,
         enable_markdown_memo=not args.disable_markdown_memo,
     )
 
