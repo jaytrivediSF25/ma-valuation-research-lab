@@ -16,6 +16,7 @@ from deal_pipeline.precedent_curation import curate_precedent_transactions
 from deal_pipeline.quality import evaluate_data_quality
 from deal_pipeline.scenarios import build_valuation_scenarios
 from deal_pipeline.sector_packs import apply_sector_pack
+from deal_pipeline.validation import run_model_validation_suite
 
 
 class PipelineUnitTests(unittest.TestCase):
@@ -206,6 +207,19 @@ class PipelineUnitTests(unittest.TestCase):
         s1 = _score_row({"blend_gap_to_current": 0.2, "data_quality_score": 80, "risk_flag_count": 1})
         s2 = _score_row({"blend_gap_to_current": -0.1, "data_quality_score": 60, "risk_flag_count": 4})
         self.assertGreater(s1, s2)
+
+    def test_validation_suite(self) -> None:
+        target = pd.Series({"enterprise_value": 500.0})
+        out = run_model_validation_suite(
+            target_row=target,
+            comps_summary={"peer_count": 8},
+            precedents_summary={"transaction_count": 9},
+            robustness_summary={"target_ev_revenue_zscore": 1.2},
+            quality_summary={"score": 82.0},
+            dcf_summary={"implied_ev_base": 560.0},
+        )
+        self.assertEqual(out.summary["validation_checks"], 5)
+        self.assertIn("status", out.validation_table.columns)
 
 
 if __name__ == "__main__":

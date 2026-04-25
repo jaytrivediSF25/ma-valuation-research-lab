@@ -72,6 +72,7 @@ def build_markdown_memo(
     precedent_curation = structured_report.get("precedent_curation", {})
     sector_pack = structured_report.get("sector_pack", {})
     lineage = structured_report.get("lineage", {})
+    validation = structured_report.get("validation", {})
 
     lines: List[str] = []
     lines.append(f"# Deal Analysis Memo: {company.get('name') or company.get('ticker')}")
@@ -179,6 +180,11 @@ def build_markdown_memo(
     lines.append("")
     lines.append(f"- Lineage rows generated: {lineage.get('lineage_row_count', 0)}")
     lines.append(f"- Lineage sections covered: {lineage.get('lineage_sections', 0)}")
+    lines.append("")
+    lines.append("## Validation Suite")
+    lines.append("")
+    lines.append(f"- Validation score: {validation.get('validation_score', 0)}")
+    lines.append(f"- Checks / warnings: {validation.get('validation_checks', 0)} / {validation.get('validation_warn_count', 0)}")
     lines.append("")
     lines.append("## Data Quality")
     lines.append("")

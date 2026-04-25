@@ -20,6 +20,7 @@ from .quality import evaluate_data_quality
 from .robustness import compute_robustness_metrics
 from .scenarios import build_valuation_scenarios
 from .sector_packs import apply_sector_pack
+from .validation import run_model_validation_suite
 
 
 @dataclass
@@ -57,6 +58,14 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         dcf_summary=dcf.summary,
         config=runtime_config,
     )
+    validation = run_model_validation_suite(
+        target_row=target_row,
+        comps_summary=comps.summary,
+        precedents_summary=precedents.summary,
+        robustness_summary=robustness.summary,
+        quality_summary={"score": quality.score},
+        dcf_summary=dcf.summary,
+    )
     lineage = build_lineage_report(
         target_row=target_row,
         additional_sections={
@@ -65,6 +74,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
             "blended_valuation": blended.summary,
             "accretion_dilution": acc_dil.summary,
             "lbo_underwriting": lbo.summary,
+            "validation": validation.summary,
         },
     )
 
@@ -110,6 +120,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "precedent_curation": precedent_curation.summary,
         "sector_pack": sector_pack_summary,
         "lineage": lineage.summary,
+        "validation": validation.summary,
     }
     insights = generate_ai_insights(structured_payload, config.openai_model)
 
@@ -132,6 +143,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "precedent_curated_count": precedent_curation.summary.get("curated_transaction_count"),
         "sector_pack": sector_pack_summary.get("sector_pack"),
         "lineage_row_count": lineage.summary.get("lineage_row_count"),
+        "validation_score": validation.summary.get("validation_score"),
         "blend_stance": blended.summary.get("blend_stance"),
     }
 
@@ -157,6 +169,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         precedent_curation_summary=precedent_curation.summary,
         sector_pack_summary=sector_pack_summary,
         lineage_summary=lineage.summary,
+        validation_summary=validation.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -173,6 +186,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         precedent_curation_table=precedent_curation.curated_table,
         sector_pack_table=sector_pack_table,
         lineage_table=lineage.lineage_table,
+        validation_table=validation.validation_table,
         quality_table=quality.check_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,

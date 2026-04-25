@@ -155,6 +155,13 @@ class LineageSummary(BaseModel):
     lineage_sections: int = 0
 
 
+class ValidationSummary(BaseModel):
+    validation_checks: int = 0
+    validation_warn_count: int = 0
+    validation_pass_count: int = 0
+    validation_score: float = 0.0
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -189,6 +196,7 @@ class FinalReport(BaseModel):
     precedent_curation: PrecedentCurationSummary
     sector_pack: SectorPackSummary
     lineage: LineageSummary
+    validation: ValidationSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str
