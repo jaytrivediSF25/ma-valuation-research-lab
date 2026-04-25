@@ -50,6 +50,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--financing-equity-pct", type=float, default=0.30, help="Equity financing share of deal funds")
     parser.add_argument("--assumed-interest-rate", type=float, default=0.06, help="Interest rate used for incremental acquisition debt")
     parser.add_argument("--integration-cost-pct-revenue", type=float, default=0.01, help="One-time integration cost as %% of target revenue")
+    parser.add_argument("--lbo-holding-years", type=int, default=5, help="LBO holding period in years")
+    parser.add_argument("--lbo-entry-multiple", type=float, default=10.0, help="Entry EV/EBITDA multiple")
+    parser.add_argument("--lbo-exit-multiple", type=float, default=11.0, help="Exit EV/EBITDA multiple")
+    parser.add_argument("--lbo-ebitda-growth", type=float, default=0.06, help="Annual EBITDA growth in LBO model")
+    parser.add_argument("--lbo-capex-pct-ebitda", type=float, default=0.18, help="Capex as %% of EBITDA in LBO")
+    parser.add_argument("--lbo-cash-tax-pct-ebitda", type=float, default=0.20, help="Cash taxes as %% of EBITDA in LBO")
+    parser.add_argument("--lbo-senior-debt-multiple", type=float, default=3.0, help="Senior debt at entry as EBITDA multiple")
+    parser.add_argument("--lbo-mezz-debt-multiple", type=float, default=1.0, help="Mezz debt at entry as EBITDA multiple")
+    parser.add_argument("--lbo-senior-interest-rate", type=float, default=0.075, help="Senior debt interest rate in LBO")
+    parser.add_argument("--lbo-mezz-interest-rate", type=float, default=0.11, help="Mezz debt interest rate in LBO")
     parser.add_argument(
         "--disable-markdown-memo",
         action="store_true",
@@ -99,6 +109,16 @@ def main() -> None:
         financing_equity_pct=args.financing_equity_pct,
         assumed_interest_rate=args.assumed_interest_rate,
         integration_cost_pct_revenue=args.integration_cost_pct_revenue,
+        lbo_holding_years=args.lbo_holding_years,
+        lbo_entry_multiple=args.lbo_entry_multiple,
+        lbo_exit_multiple=args.lbo_exit_multiple,
+        lbo_ebitda_growth=args.lbo_ebitda_growth,
+        lbo_capex_pct_ebitda=args.lbo_capex_pct_ebitda,
+        lbo_cash_tax_pct_ebitda=args.lbo_cash_tax_pct_ebitda,
+        lbo_senior_debt_multiple=args.lbo_senior_debt_multiple,
+        lbo_mezz_debt_multiple=args.lbo_mezz_debt_multiple,
+        lbo_senior_interest_rate=args.lbo_senior_interest_rate,
+        lbo_mezz_interest_rate=args.lbo_mezz_interest_rate,
         enable_markdown_memo=not args.disable_markdown_memo,
     )
 

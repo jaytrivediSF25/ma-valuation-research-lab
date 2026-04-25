@@ -10,6 +10,7 @@ from .export import ExportArtifacts, export_outputs
 from .feature_engineering import engineer_features, select_target_company
 from .ingestion import ingest_data
 from .insights import generate_ai_insights, generate_signals
+from .lbo import run_lbo_underwriting
 from .memo import build_markdown_memo
 from .normalization import normalize_data
 from .quality import evaluate_data_quality
@@ -40,6 +41,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
     dcf = run_dcf_analysis(target_row, config=config)
     robustness = compute_robustness_metrics(comps.peer_table, precedents.precedent_table, target_row)
     acc_dil = run_accretion_dilution_analysis(target_row, company_metrics, config=config)
+    lbo = run_lbo_underwriting(target_row, config=config)
     blended = build_blended_valuation(
         target_row=target_row,
         comps_summary=comps.summary,
@@ -86,6 +88,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "robustness": robustness.summary,
         "blended_valuation": blended.summary,
         "accretion_dilution": acc_dil.summary,
+        "lbo_underwriting": lbo.summary,
     }
     insights = generate_ai_insights(structured_payload, config.openai_model)
 
@@ -103,6 +106,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "dcf_case_count": int(dcf.summary.get("case_count", 0)),
         "dcf_implied_share_price_base": dcf.summary.get("implied_share_price_base"),
         "eps_accretion_dilution": acc_dil.summary.get("eps_accretion_dilution"),
+        "lbo_irr": lbo.summary.get("irr"),
         "blend_stance": blended.summary.get("blend_stance"),
     }
 
@@ -123,6 +127,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         robustness_summary=robustness.summary,
         blended_valuation_summary=blended.summary,
         accretion_dilution_summary=acc_dil.summary,
+        lbo_summary=lbo.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -134,6 +139,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         robustness_table=robustness.robustness_table,
         blend_table=blended.blend_table,
         accretion_dilution_table=acc_dil.scenario_table,
+        lbo_table=lbo.lbo_table,
         quality_table=quality.check_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,

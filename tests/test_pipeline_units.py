@@ -8,6 +8,7 @@ from deal_pipeline.blended_valuation import build_blended_valuation
 from deal_pipeline.config import PipelineConfig
 from deal_pipeline.dcf import run_dcf_analysis
 from deal_pipeline.insights import generate_signals
+from deal_pipeline.lbo import run_lbo_underwriting
 from deal_pipeline.quality import evaluate_data_quality
 from deal_pipeline.scenarios import build_valuation_scenarios
 
@@ -139,6 +140,15 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertIsNotNone(out.summary["eps_accretion_dilution"])
         self.assertIsNotNone(out.summary["proforma_net_leverage"])
         self.assertEqual(len(out.scenario_table), 3)
+
+    def test_lbo_underwriting(self) -> None:
+        config = PipelineConfig(data_dir=Path("."), output_dir=Path("./output"))
+        target = pd.Series({"ebitda": 250.0})
+        out = run_lbo_underwriting(target, config)
+        self.assertIsNotNone(out.summary["entry_ev"])
+        self.assertIsNotNone(out.summary["moic"])
+        self.assertIsNotNone(out.summary["irr"])
+        self.assertFalse(out.lbo_table.empty)
 
 
 if __name__ == "__main__":

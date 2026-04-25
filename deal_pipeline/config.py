@@ -47,6 +47,16 @@ class PipelineConfig:
     assumed_interest_rate: float = 0.06
     assumed_buyer_pe: float = 18.0
     integration_cost_pct_revenue: float = 0.01
+    lbo_holding_years: int = 5
+    lbo_entry_multiple: float = 10.0
+    lbo_exit_multiple: float = 11.0
+    lbo_ebitda_growth: float = 0.06
+    lbo_capex_pct_ebitda: float = 0.18
+    lbo_cash_tax_pct_ebitda: float = 0.20
+    lbo_senior_debt_multiple: float = 3.0
+    lbo_mezz_debt_multiple: float = 1.0
+    lbo_senior_interest_rate: float = 0.075
+    lbo_mezz_interest_rate: float = 0.11
 
     def ensure_directories(self) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)

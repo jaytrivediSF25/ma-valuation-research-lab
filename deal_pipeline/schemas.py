@@ -116,6 +116,17 @@ class AccretionDilutionSummary(BaseModel):
     proforma_net_leverage: Optional[float] = None
 
 
+class LBOSummary(BaseModel):
+    entry_ev: Optional[float] = None
+    exit_ev: Optional[float] = None
+    entry_equity: Optional[float] = None
+    exit_equity: Optional[float] = None
+    moic: Optional[float] = None
+    irr: Optional[float] = None
+    exit_net_leverage: Optional[float] = None
+    entry_leverage: Optional[float] = None
+
+
 class InsightSet(BaseModel):
     key_insights: List[str] = Field(default_factory=list)
     primary_risk: str
@@ -145,6 +156,7 @@ class FinalReport(BaseModel):
     robustness: RobustnessSummary
     blended_valuation: BlendedValuationSummary
     accretion_dilution: AccretionDilutionSummary
+    lbo_underwriting: LBOSummary
     insights: InsightSet
     diagnostics: Dict[str, Any]
     conclusion: str

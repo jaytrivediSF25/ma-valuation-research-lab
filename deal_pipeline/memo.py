@@ -67,6 +67,7 @@ def build_markdown_memo(
     robustness = structured_report.get("robustness", {})
     blend = structured_report.get("blended_valuation", {})
     acc_dil = structured_report.get("accretion_dilution", {})
+    lbo = structured_report.get("lbo_underwriting", {})
 
     lines: List[str] = []
     lines.append(f"# Deal Analysis Memo: {company.get('name') or company.get('ticker')}")
@@ -145,6 +146,13 @@ def build_markdown_memo(
     lines.append(f"- Deal enterprise value: {_fmt_money(acc_dil.get('deal_enterprise_value'))}")
     lines.append(f"- EPS accretion/dilution: {_fmt_pct(acc_dil.get('eps_accretion_dilution'))}")
     lines.append(f"- Pro forma net leverage: {_fmt_mult(acc_dil.get('proforma_net_leverage'))}")
+    lines.append("")
+    lines.append("## LBO Underwriting Snapshot")
+    lines.append("")
+    lines.append(f"- Entry EV / Exit EV: {_fmt_money(lbo.get('entry_ev'))} / {_fmt_money(lbo.get('exit_ev'))}")
+    lines.append(f"- Entry equity / Exit equity: {_fmt_money(lbo.get('entry_equity'))} / {_fmt_money(lbo.get('exit_equity'))}")
+    lines.append(f"- MOIC / IRR: {_fmt_mult(lbo.get('moic'))} / {_fmt_pct(lbo.get('irr'))}")
+    lines.append(f"- Exit net leverage: {_fmt_mult(lbo.get('exit_net_leverage'))}")
     lines.append("")
     lines.append("## Data Quality")
     lines.append("")

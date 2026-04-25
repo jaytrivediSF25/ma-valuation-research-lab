@@ -97,6 +97,7 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     capital_structure = payload.get("capital_structure", {})
     blend = payload.get("blended_valuation", {})
     acc_dil = payload.get("accretion_dilution", {})
+    lbo = payload.get("lbo_underwriting", {})
     robustness = payload.get("robustness", {})
 
     insights = []
@@ -133,6 +134,9 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     eps_ad = acc_dil.get("eps_accretion_dilution")
     if eps_ad is not None:
         insights.append(f"Pro forma transaction model indicates {eps_ad:+.1%} EPS impact in the base case.")
+    lbo_irr = lbo.get("irr")
+    if lbo_irr is not None:
+        insights.append(f"LBO underwriting indicates an IRR of {lbo_irr:.1%} under base assumptions.")
     blend_gap = blend.get("blend_gap_to_current")
     if blend_gap is not None:
         insights.append(f"Blended valuation synthesis indicates {blend_gap:+.1%} relative value versus current EV.")

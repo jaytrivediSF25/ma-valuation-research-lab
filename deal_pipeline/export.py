@@ -16,6 +16,7 @@ from .schemas import (
     DCFSummary,
     FinalReport,
     FinancialSnapshot,
+    LBOSummary,
     PrecedentAnalysis,
     RobustnessSummary,
     SignalSet,
@@ -56,6 +57,7 @@ def _build_summary_sheet(
     robustness_summary: Dict[str, Any],
     blended_valuation_summary: Dict[str, Any],
     accretion_dilution_summary: Dict[str, Any],
+    lbo_summary: Dict[str, Any],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -105,6 +107,9 @@ def _build_summary_sheet(
         ("blend_stance", blended_valuation_summary.get("blend_stance")),
         ("accretion_dilution_pct", accretion_dilution_summary.get("eps_accretion_dilution")),
         ("proforma_net_leverage", accretion_dilution_summary.get("proforma_net_leverage")),
+        ("lbo_moic", lbo_summary.get("moic")),
+        ("lbo_irr", lbo_summary.get("irr")),
+        ("lbo_exit_net_leverage", lbo_summary.get("exit_net_leverage")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -126,6 +131,7 @@ def export_outputs(
     robustness_summary: Dict[str, Any],
     blended_valuation_summary: Dict[str, Any],
     accretion_dilution_summary: Dict[str, Any],
+    lbo_summary: Dict[str, Any],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -137,6 +143,7 @@ def export_outputs(
     robustness_table: pd.DataFrame,
     blend_table: pd.DataFrame,
     accretion_dilution_table: pd.DataFrame,
+    lbo_table: pd.DataFrame,
     quality_table: pd.DataFrame,
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
@@ -172,6 +179,7 @@ def export_outputs(
     robustness_set = RobustnessSummary(**robustness_summary)
     blend_set = BlendedValuationSummary(**blended_valuation_summary)
     acc_dil_set = AccretionDilutionSummary(**accretion_dilution_summary)
+    lbo_set = LBOSummary(**lbo_summary)
 
     report = FinalReport(
         company={
@@ -191,6 +199,7 @@ def export_outputs(
         robustness=robustness_set,
         blended_valuation=blend_set,
         accretion_dilution=acc_dil_set,
+        lbo_underwriting=lbo_set,
         insights=insights,
         diagnostics=diagnostics,
         conclusion=insights["conclusion"],
@@ -213,6 +222,7 @@ def export_outputs(
         robustness_summary=robustness_summary,
         blended_valuation_summary=blended_valuation_summary,
         accretion_dilution_summary=accretion_dilution_summary,
+        lbo_summary=lbo_summary,
         insights=insights,
     )
     raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()
@@ -229,6 +239,7 @@ def export_outputs(
         robustness_table.to_excel(writer, index=False, sheet_name="robustness")
         blend_table.to_excel(writer, index=False, sheet_name="blend")
         accretion_dilution_table.to_excel(writer, index=False, sheet_name="acc_dil")
+        lbo_table.to_excel(writer, index=False, sheet_name="lbo")
         quality_table.to_excel(writer, index=False, sheet_name="quality")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 
