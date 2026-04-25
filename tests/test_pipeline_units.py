@@ -73,11 +73,18 @@ class PipelineUnitTests(unittest.TestCase):
                 "revenue_growth_yoy": 0.08,
                 "ebitda_margin": 0.22,
                 "enterprise_value": 4800.0,
+                "total_debt": 1200.0,
+                "cash": 200.0,
+                "shares_outstanding": 50.0,
+                "interest_expense": 72.0,
             }
         )
         dcf = run_dcf_analysis(target, config)
         self.assertEqual(dcf.summary["case_count"], 3)
         self.assertIsNotNone(dcf.summary["implied_ev_base"])
+        self.assertIsNotNone(dcf.summary["implied_equity_value_base"])
+        self.assertIsNotNone(dcf.summary["implied_share_price_base"])
+        self.assertGreaterEqual(dcf.capital_structure_summary["debt_years_modeled"], 1)
         self.assertFalse(dcf.dcf_table.empty)
         self.assertFalse(dcf.sensitivity_table.empty)
 

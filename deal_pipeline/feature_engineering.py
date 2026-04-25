@@ -26,6 +26,8 @@ DEPRECIATION_CONCEPTS = [
 MARKET_CAP_CONCEPTS = ["EntityPublicFloat"]
 DEBT_CONCEPTS = ["LongTermDebtNoncurrent", "LongTermDebtCurrent", "ShortTermBorrowings", "LongTermDebt", "DebtCurrent"]
 CASH_CONCEPTS = ["CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsAndShortTermInvestments"]
+SHARES_OUTSTANDING_CONCEPTS = ["EntityCommonStockSharesOutstanding", "CommonStockSharesOutstanding"]
+INTEREST_EXPENSE_CONCEPTS = ["InterestExpense", "InterestExpenseDebt"]
 
 
 @dataclass
@@ -84,6 +86,8 @@ def _build_sec_metrics_from_companyfacts(companyfacts: pd.DataFrame) -> pd.DataF
                 "market_cap",
                 "total_debt",
                 "cash",
+                "shares_outstanding",
+                "interest_expense",
                 "enterprise_value",
                 "ev_revenue",
                 "ev_ebitda",
@@ -131,6 +135,10 @@ def _build_sec_metrics_from_companyfacts(companyfacts: pd.DataFrame) -> pd.DataF
 
         total_debt = _sum_latest_values(group, DEBT_CONCEPTS)
         cash = _sum_latest_values(group, CASH_CONCEPTS)
+        shares_row = _latest_row(group, SHARES_OUTSTANDING_CONCEPTS)
+        shares_outstanding = float(shares_row["val"]) if shares_row is not None else None
+        interest_row = _latest_row(group, INTEREST_EXPENSE_CONCEPTS)
+        interest_expense = float(interest_row["val"]) if interest_row is not None else None
 
         enterprise_value = None
         if market_cap is not None:
@@ -156,6 +164,8 @@ def _build_sec_metrics_from_companyfacts(companyfacts: pd.DataFrame) -> pd.DataF
                 "market_cap": market_cap,
                 "total_debt": total_debt,
                 "cash": cash,
+                "shares_outstanding": shares_outstanding,
+                "interest_expense": interest_expense,
                 "enterprise_value": enterprise_value,
                 "ev_revenue": ev_revenue,
                 "ev_ebitda": ev_ebitda,
@@ -198,6 +208,8 @@ def _latest_external_financials(financials: pd.DataFrame) -> pd.DataFrame:
         "market_cap",
         "total_debt",
         "cash",
+        "shares_outstanding",
+        "interest_expense",
         "enterprise_value",
         "ev_revenue",
         "ev_ebitda",
@@ -239,6 +251,8 @@ def _merge_sec_and_external(sec_metrics: pd.DataFrame, external_metrics: pd.Data
         "market_cap",
         "total_debt",
         "cash",
+        "shares_outstanding",
+        "interest_expense",
         "enterprise_value",
         "ev_revenue",
         "ev_ebitda",
@@ -306,11 +320,22 @@ def engineer_features(normalized: NormalizedData) -> FeatureOutput:
     if merged.empty:
         return FeatureOutput(company_metrics=merged)
 
-    for col in ["revenue", "ebitda", "enterprise_value"]:
+    for col in [
+        "revenue",
+        "ebitda",
+        "enterprise_value",
+        "market_cap",
+        "total_debt",
+        "cash",
+        "shares_outstanding",
+        "interest_expense",
+    ]:
         merged[col] = pd.to_numeric(merged[col], errors="coerce")
     merged["ev_revenue"] = merged["ev_revenue"].fillna(merged["enterprise_value"] / merged["revenue"])
     merged["ev_ebitda"] = merged["ev_ebitda"].fillna(merged["enterprise_value"] / merged["ebitda"])
     merged["ebitda_margin"] = merged["ebitda_margin"].fillna(merged["ebitda"] / merged["revenue"])
+    merged["net_debt"] = merged["total_debt"].fillna(0.0) - merged["cash"].fillna(0.0)
+    merged["implied_share_price_current"] = merged["market_cap"] / merged["shares_outstanding"]
     merged["as_of_date"] = pd.to_datetime(merged["as_of_date"], errors="coerce")
     merged = merged.drop_duplicates(subset=["cik", "ticker"], keep="last")
     return FeatureOutput(company_metrics=merged)

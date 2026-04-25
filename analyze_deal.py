@@ -34,6 +34,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dcf-depreciation-pct-revenue", type=float, default=0.03, help="Depreciation as %% of revenue for DCF")
     parser.add_argument("--dcf-capex-pct-revenue", type=float, default=0.035, help="Capex as %% of revenue for DCF")
     parser.add_argument("--dcf-nwc-pct-revenue", type=float, default=0.015, help="NWC investment as %% of revenue for DCF")
+    parser.add_argument("--debt-amortization-rate", type=float, default=0.08, help="Annual debt amortization rate for debt schedule")
+    parser.add_argument("--fallback-interest-rate", type=float, default=0.055, help="Fallback interest rate when interest expense is missing")
+    parser.add_argument("--interest-rate-floor", type=float, default=0.02, help="Lower bound on inferred interest rate")
+    parser.add_argument("--interest-rate-cap", type=float, default=0.14, help="Upper bound on inferred interest rate")
     parser.add_argument("--blend-weight-comps", type=float, default=0.35, help="Blend weight assigned to comps anchor")
     parser.add_argument("--blend-weight-precedents", type=float, default=0.25, help="Blend weight assigned to precedents anchor")
     parser.add_argument("--blend-weight-scenarios", type=float, default=0.20, help="Blend weight assigned to scenarios anchor")
@@ -71,6 +75,10 @@ def main() -> None:
         dcf_depreciation_pct_revenue=args.dcf_depreciation_pct_revenue,
         dcf_capex_pct_revenue=args.dcf_capex_pct_revenue,
         dcf_nwc_pct_revenue=args.dcf_nwc_pct_revenue,
+        debt_amortization_rate=args.debt_amortization_rate,
+        fallback_interest_rate=args.fallback_interest_rate,
+        interest_rate_floor=args.interest_rate_floor,
+        interest_rate_cap=args.interest_rate_cap,
         blend_weight_comps=args.blend_weight_comps,
         blend_weight_precedents=args.blend_weight_precedents,
         blend_weight_scenarios=args.blend_weight_scenarios,

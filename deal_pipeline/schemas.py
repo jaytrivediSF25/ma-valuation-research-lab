@@ -15,6 +15,10 @@ class FinancialSnapshot(BaseModel):
     market_cap: Optional[float] = None
     total_debt: Optional[float] = None
     cash: Optional[float] = None
+    net_debt: Optional[float] = None
+    shares_outstanding: Optional[float] = None
+    interest_expense: Optional[float] = None
+    implied_share_price_current: Optional[float] = None
 
 
 class ComparableAnalysis(BaseModel):
@@ -69,6 +73,17 @@ class DCFSummary(BaseModel):
     implied_ev_high: Optional[float] = None
     current_ev: Optional[float] = None
     dcf_gap_to_current: Optional[float] = None
+    implied_equity_value_base: Optional[float] = None
+    implied_share_price_base: Optional[float] = None
+    tax_shield_pv_base: Optional[float] = None
+
+
+class CapitalStructureSummary(BaseModel):
+    net_debt_base: Optional[float] = None
+    implied_equity_value_base: Optional[float] = None
+    implied_share_price_base: Optional[float] = None
+    debt_years_modeled: int = 0
+    tax_shield_pv_base: Optional[float] = None
 
 
 class RobustnessSummary(BaseModel):
@@ -112,6 +127,7 @@ class FinalReport(BaseModel):
     data_quality: DataQuality
     valuation_scenarios: ValuationScenarioSummary
     dcf_analysis: DCFSummary
+    capital_structure: CapitalStructureSummary
     robustness: RobustnessSummary
     blended_valuation: BlendedValuationSummary
     insights: InsightSet

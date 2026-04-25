@@ -29,6 +29,10 @@ CORE_COMPANYFACTS_CONCEPTS = {
     "ShortTermBorrowings",
     "CashAndCashEquivalentsAtCarryingValue",
     "CashCashEquivalentsAndShortTermInvestments",
+    "EntityCommonStockSharesOutstanding",
+    "CommonStockSharesOutstanding",
+    "InterestExpense",
+    "InterestExpenseDebt",
 }
 
 
@@ -75,7 +79,10 @@ def _load_companyfacts_filtered(path: Path) -> pd.DataFrame:
     for chunk in pd.read_csv(path, usecols=usecols, dtype=str, chunksize=200000, low_memory=False):
         filtered = chunk[
             chunk["concept"].isin(CORE_COMPANYFACTS_CONCEPTS)
-            | chunk["concept"].str.contains("Revenue|Sales|Ebitda|Depreciation|Debt|Cash|PublicFloat", na=False)
+            | chunk["concept"].str.contains(
+                "Revenue|Sales|Ebitda|Depreciation|Debt|Cash|PublicFloat|SharesOutstanding|InterestExpense|Interest",
+                na=False,
+            )
         ]
         filtered = filtered[filtered["form"].isin(["10-K", "10-Q", "10-K/A", "10-Q/A"])]
         if not filtered.empty:

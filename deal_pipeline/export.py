@@ -9,6 +9,7 @@ import pandas as pd
 from .config import PipelineConfig
 from .schemas import (
     BlendedValuationSummary,
+    CapitalStructureSummary,
     ComparableAnalysis,
     DataQuality,
     DCFSummary,
@@ -50,6 +51,7 @@ def _build_summary_sheet(
     data_quality: Dict[str, Any],
     valuation_scenarios: Dict[str, Any],
     dcf_summary: Dict[str, Any],
+    capital_structure_summary: Dict[str, Any],
     robustness_summary: Dict[str, Any],
     blended_valuation_summary: Dict[str, Any],
     insights: Dict[str, Any],
@@ -88,6 +90,11 @@ def _build_summary_sheet(
         ("dcf_implied_ev_base", dcf_summary.get("implied_ev_base")),
         ("dcf_implied_ev_high", dcf_summary.get("implied_ev_high")),
         ("dcf_gap_to_current", dcf_summary.get("dcf_gap_to_current")),
+        ("dcf_implied_equity_value_base", dcf_summary.get("implied_equity_value_base")),
+        ("dcf_implied_share_price_base", dcf_summary.get("implied_share_price_base")),
+        ("dcf_tax_shield_pv_base", dcf_summary.get("tax_shield_pv_base")),
+        ("capital_structure_net_debt_base", capital_structure_summary.get("net_debt_base")),
+        ("capital_structure_debt_years_modeled", capital_structure_summary.get("debt_years_modeled")),
         ("comps_ev_rev_ci_low", robustness_summary.get("comps_ev_revenue_ci_low")),
         ("comps_ev_rev_ci_high", robustness_summary.get("comps_ev_revenue_ci_high")),
         ("target_ev_rev_zscore", robustness_summary.get("target_ev_revenue_zscore")),
@@ -111,6 +118,7 @@ def export_outputs(
     data_quality: Dict[str, Any],
     valuation_scenarios: Dict[str, Any],
     dcf_summary: Dict[str, Any],
+    capital_structure_summary: Dict[str, Any],
     robustness_summary: Dict[str, Any],
     blended_valuation_summary: Dict[str, Any],
     insights: Dict[str, Any],
@@ -119,6 +127,8 @@ def export_outputs(
     scenario_table: pd.DataFrame,
     dcf_table: pd.DataFrame,
     dcf_sensitivity_table: pd.DataFrame,
+    debt_schedule_table: pd.DataFrame,
+    capital_bridge_table: pd.DataFrame,
     robustness_table: pd.DataFrame,
     blend_table: pd.DataFrame,
     quality_table: pd.DataFrame,
@@ -141,6 +151,10 @@ def export_outputs(
         market_cap=_as_float(target_row.get("market_cap")),
         total_debt=_as_float(target_row.get("total_debt")),
         cash=_as_float(target_row.get("cash")),
+        net_debt=_as_float(target_row.get("net_debt")),
+        shares_outstanding=_as_float(target_row.get("shares_outstanding")),
+        interest_expense=_as_float(target_row.get("interest_expense")),
+        implied_share_price_current=_as_float(target_row.get("implied_share_price_current")),
     )
     comparable_analysis = ComparableAnalysis(**comps_summary)
     precedent_analysis = PrecedentAnalysis(**precedents_summary)
@@ -148,6 +162,7 @@ def export_outputs(
     data_quality_set = DataQuality(**data_quality)
     valuation_scenario_set = ValuationScenarioSummary(**valuation_scenarios)
     dcf_set = DCFSummary(**dcf_summary)
+    capital_structure_set = CapitalStructureSummary(**capital_structure_summary)
     robustness_set = RobustnessSummary(**robustness_summary)
     blend_set = BlendedValuationSummary(**blended_valuation_summary)
 
@@ -165,6 +180,7 @@ def export_outputs(
         data_quality=data_quality_set,
         valuation_scenarios=valuation_scenario_set,
         dcf_analysis=dcf_set,
+        capital_structure=capital_structure_set,
         robustness=robustness_set,
         blended_valuation=blend_set,
         insights=insights,
@@ -185,6 +201,7 @@ def export_outputs(
         data_quality=data_quality,
         valuation_scenarios=valuation_scenarios,
         dcf_summary=dcf_summary,
+        capital_structure_summary=capital_structure_summary,
         robustness_summary=robustness_summary,
         blended_valuation_summary=blended_valuation_summary,
         insights=insights,
@@ -198,6 +215,8 @@ def export_outputs(
         scenario_table.to_excel(writer, index=False, sheet_name="scenarios")
         dcf_table.to_excel(writer, index=False, sheet_name="dcf")
         dcf_sensitivity_table.to_excel(writer, index=False, sheet_name="dcf_sens")
+        debt_schedule_table.to_excel(writer, index=False, sheet_name="debt_schedule")
+        capital_bridge_table.to_excel(writer, index=False, sheet_name="cap_bridge")
         robustness_table.to_excel(writer, index=False, sheet_name="robustness")
         blend_table.to_excel(writer, index=False, sheet_name="blend")
         quality_table.to_excel(writer, index=False, sheet_name="quality")

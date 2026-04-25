@@ -33,6 +33,8 @@ BASE_FINANCIAL_SCHEMA = {
     "market_cap": ["market_cap", "market_value", "equity_value", "entity_public_float", "public_float"],
     "total_debt": ["total_debt", "debt", "net_debt", "long_term_debt"],
     "cash": ["cash", "cash_equivalents", "cash_and_equivalents"],
+    "shares_outstanding": ["shares_outstanding", "share_count", "shares", "diluted_shares_outstanding"],
+    "interest_expense": ["interest_expense", "interest_cost", "interest"],
     "currency": ["currency", "ccy"],
     "source_file": ["source_file"],
 }
@@ -158,11 +160,20 @@ def _normalize_external_financial_like(df: pd.DataFrame) -> pd.DataFrame:
     normalized["cik"] = normalized["cik"].fillna("").astype(str).str.replace(r"\.0$", "", regex=True).str.zfill(10)
     normalized["sector"] = normalized["sector"].astype(str).str.strip()
     normalized["date"] = coerce_date_series(normalized["date"])
-    for col in ["revenue", "ebitda", "enterprise_value", "market_cap", "total_debt", "cash"]:
+    for col in [
+        "revenue",
+        "ebitda",
+        "enterprise_value",
+        "market_cap",
+        "total_debt",
+        "cash",
+        "shares_outstanding",
+        "interest_expense",
+    ]:
         normalized[col] = coerce_numeric_series(normalized[col])
     normalized = _normalize_currency(
         normalized,
-        ["revenue", "ebitda", "enterprise_value", "market_cap", "total_debt", "cash"],
+        ["revenue", "ebitda", "enterprise_value", "market_cap", "total_debt", "cash", "interest_expense"],
     )
     normalized = normalized.drop_duplicates(
         subset=["ticker", "company_name_std", "date", "source_file"],

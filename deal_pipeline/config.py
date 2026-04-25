@@ -30,6 +30,10 @@ class PipelineConfig:
     dcf_nwc_pct_revenue: float = 0.015
     dcf_growth_floor: float = 0.01
     dcf_growth_cap: float = 0.20
+    debt_amortization_rate: float = 0.08
+    fallback_interest_rate: float = 0.055
+    interest_rate_floor: float = 0.02
+    interest_rate_cap: float = 0.14
     blend_weight_comps: float = 0.35
     blend_weight_precedents: float = 0.25
     blend_weight_scenarios: float = 0.20

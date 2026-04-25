@@ -94,6 +94,7 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     precedents = payload["precedent_transactions"]
     signals = payload["signals"]
     dcf = payload.get("dcf_analysis", {})
+    capital_structure = payload.get("capital_structure", {})
     blend = payload.get("blended_valuation", {})
     robustness = payload.get("robustness", {})
 
@@ -122,6 +123,12 @@ def _rule_based_insights(payload: Dict[str, Any]) -> Dict[str, Any]:
     dcf_gap = dcf.get("dcf_gap_to_current")
     if dcf_gap is not None:
         insights.append(f"DCF base case implies a {dcf_gap:+.1%} spread versus current enterprise value.")
+    implied_share_price = dcf.get("implied_share_price_base")
+    if implied_share_price is not None:
+        insights.append(f"EV-to-equity bridge implies base share value of ${implied_share_price:,.2f}.")
+    tax_shield = capital_structure.get("tax_shield_pv_base")
+    if tax_shield is not None:
+        insights.append(f"Projected debt tax shield contributes approximately ${tax_shield:,.0f} to valuation support.")
     blend_gap = blend.get("blend_gap_to_current")
     if blend_gap is not None:
         insights.append(f"Blended valuation synthesis indicates {blend_gap:+.1%} relative value versus current EV.")
