@@ -2,6 +2,7 @@
 import argparse
 from pathlib import Path
 
+from deal_pipeline.automation import run_scheduled_refresh
 from deal_pipeline import PipelineConfig, run_pipeline
 from deal_pipeline.batch_screen import run_portfolio_batch_screen
 
@@ -16,6 +17,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--openai-model", default="gpt-4o-mini", help="OpenAI model for insights")
     parser.add_argument("--batch-screen", action="store_true", help="Run portfolio batch screening mode")
     parser.add_argument("--batch-top-n", type=int, default=25, help="Top-N universe size for batch screening")
+    parser.add_argument("--scheduled-refresh", action="store_true", help="Run scheduled watchlist refresh and alert generation")
+    parser.add_argument("--watchlist-file", default="./data/watchlist.txt", help="Path to watchlist file (.txt or .json)")
+    parser.add_argument("--state-file", default="./output/schedule_state.json", help="Path to persisted scheduler state file")
     parser.add_argument(
         "--max-raw-rows-for-excel",
         type=int,
@@ -136,6 +140,19 @@ def main() -> None:
         print(f"Screen CSV: {batch.csv_path}")
         print(f"Screen JSON: {batch.json_path}")
         print(f"Rows: {batch.rows}")
+        return
+
+    if args.scheduled_refresh:
+        scheduled = run_scheduled_refresh(
+            config=config,
+            watchlist_file=Path(args.watchlist_file).resolve(),
+            state_file=Path(args.state_file).resolve(),
+        )
+        print("Scheduled refresh complete.")
+        print(f"Snapshot state: {scheduled.snapshot_path}")
+        print(f"Alerts file: {scheduled.alerts_path}")
+        print(f"Refreshed tickers: {scheduled.refreshed}")
+        print(f"Alerts generated: {scheduled.alerts}")
         return
 
     result = run_pipeline(config)

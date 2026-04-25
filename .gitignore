@@ -9,3 +9,5 @@ __pycache__/
 output/deal_analysis_*.json
 output/deal_analysis_*.xlsx
 output/deal_analysis_*_memo.md
+output/ic_pack_*/
+output/test_watchlist.txt

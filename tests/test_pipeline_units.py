@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 from deal_pipeline.accretion_dilution import run_accretion_dilution_analysis
+from deal_pipeline.automation import _load_watchlist
 from deal_pipeline.batch_screen import _score_row
 from deal_pipeline.blended_valuation import build_blended_valuation
 from deal_pipeline.config import PipelineConfig
@@ -222,6 +223,13 @@ class PipelineUnitTests(unittest.TestCase):
         )
         self.assertEqual(out.summary["validation_checks"], 5)
         self.assertIn("status", out.validation_table.columns)
+
+    def test_load_watchlist(self) -> None:
+        p = Path("./output/test_watchlist.txt")
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("ABT\n# comment\nMDT\n", encoding="utf-8")
+        loaded = _load_watchlist(p)
+        self.assertEqual(loaded, ["ABT", "MDT"])
 
     def test_ic_pack_generation(self) -> None:
         config = PipelineConfig(data_dir=Path("."), output_dir=Path("./output"))
