@@ -64,6 +64,7 @@ class PipelineConfig:
     duckdb_path: Optional[Path] = None
     enable_pandera_validation: bool = True
     enable_blend_optimizer: bool = True
+    enable_enterprise_suite: bool = True
 
     def ensure_directories(self) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)

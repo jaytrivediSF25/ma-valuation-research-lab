@@ -1,0 +1,22 @@
+global:
+  wacc: 0.10
+  terminal_growth: 0.025
+  tax_rate: 0.24
+  leverage_limit: 4.5
+
+sector:
+  healthcare:
+    wacc: 0.095
+    terminal_growth: 0.027
+  software:
+    wacc: 0.105
+    terminal_growth: 0.03
+  industrials:
+    wacc: 0.102
+    terminal_growth: 0.022
+
+sub_sector:
+  medtech:
+    wacc: 0.093
+  saas:
+    terminal_growth: 0.032

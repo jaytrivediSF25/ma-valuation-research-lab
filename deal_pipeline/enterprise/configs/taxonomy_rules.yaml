@@ -1,0 +1,12 @@
+- source_field: symbol
+  canonical_field: ticker
+  converter: upper
+- source_field: cik_id
+  canonical_field: cik
+  converter: identity
+- source_field: revenues
+  canonical_field: revenue
+  converter: float
+- source_field: adj_ebitda
+  canonical_field: ebitda
+  converter: float

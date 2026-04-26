@@ -23,6 +23,7 @@ from .market_data import fetch_market_data_context
 from .memo import build_markdown_memo
 from .normalization import normalize_data
 from .observability import RunLogger
+from .enterprise import run_enterprise_suite
 from .precedent_curation import curate_precedent_transactions
 from .quality import evaluate_data_quality
 from .role_packs import generate_role_packs
@@ -305,6 +306,20 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         role_packs = generate_role_packs(config.output_dir, exports.final_report.model_dump(mode="json"))
     diagnostic["role_pack_dir"] = str(role_packs.pack_dir)
     diagnostic["role_pack_files"] = len(role_packs.files)
+
+    if config.enable_enterprise_suite:
+        with obs.timed("enterprise_suite"):
+            enterprise = run_enterprise_suite(
+                output_dir=config.output_dir,
+                data_dir=config.data_dir,
+                report_payload=exports.final_report.model_dump(mode="json"),
+                company_metrics=company_metrics,
+                precedents=precedent_curation.curated_table,
+            )
+        diagnostic["enterprise_output_dir"] = str(enterprise.output_dir)
+        diagnostic["enterprise_readiness_tier"] = enterprise.summary.get("readiness_tier")
+        diagnostic["enterprise_run_key"] = enterprise.summary.get("run_key")
+
     obs_path = obs.finalize(extra=diagnostic)
     diagnostic["observability_path"] = str(obs_path)
 

@@ -12,6 +12,8 @@ pandera>=0.20.0
 # Optimization and advanced modeling
 cvxpy>=1.5.0
 scikit-learn>=1.4.0
+rapidfuzz>=3.9.0
+PyYAML>=6.0.1
 
 # Alternate dataframe/IO engines
 polars>=1.0.0

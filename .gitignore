@@ -20,3 +20,5 @@ output/contract_check_report.csv
 output/backtest_only.csv
 output/cache/
 output/warehouse/
+output/enterprise/
+output/event_delta_report.json

@@ -77,6 +77,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--disable-duckdb-store", action="store_true", help="Disable persistence of pipeline tables to DuckDB")
     parser.add_argument("--disable-pandera-validation", action="store_true", help="Disable Pandera-based contract checks")
     parser.add_argument("--disable-blend-optimizer", action="store_true", help="Disable optimization step in blended valuation weights")
+    parser.add_argument("--disable-enterprise-suite", action="store_true", help="Disable enterprise expansion suite modules")
     parser.add_argument(
         "--disable-markdown-memo",
         action="store_true",
@@ -143,6 +144,7 @@ def main() -> None:
         enable_duckdb_store=not args.disable_duckdb_store,
         enable_pandera_validation=not args.disable_pandera_validation,
         enable_blend_optimizer=not args.disable_blend_optimizer,
+        enable_enterprise_suite=not args.disable_enterprise_suite,
         enable_markdown_memo=not args.disable_markdown_memo,
     )
 

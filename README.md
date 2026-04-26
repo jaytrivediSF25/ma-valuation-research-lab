@@ -450,7 +450,13 @@ make lint
 python3 analyze_deal.py --run-backtest-only --data-dir ./data --output-dir ./output
 python3 scripts/generate_role_packs.py --target-ticker ABT
 uvicorn app.main:app --reload
+python3 scripts/run_enterprise_suite.py --target-ticker ABT
+python3 scripts/validate_docs_refs.py
+python3 scripts/run_event_monitor.py
 ```
+
+Enterprise roadmap and implementation map:
+- `docs/enterprise/roadmap.md`
 
 ---
 
