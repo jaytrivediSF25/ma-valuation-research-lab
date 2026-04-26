@@ -11,3 +11,12 @@ output/deal_analysis_*.xlsx
 output/deal_analysis_*_memo.md
 output/ic_pack_*/
 output/test_watchlist.txt
+output/role_packs_*/
+output/portfolio_screen_*.csv
+output/portfolio_screen_*.json
+output/portfolio_screen_joblog_*.csv
+output/run_observability_*.json
+output/contract_check_report.csv
+output/backtest_only.csv
+output/cache/
+output/warehouse/

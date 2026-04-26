@@ -1,0 +1,6 @@
+{
+  "rows": 5,
+  "mae_forecast_error_pct": 0.04994538219133806,
+  "median_forecast_error_pct": 0.006102941176470589,
+  "hit_rate_within_20pct": 1.0
+}

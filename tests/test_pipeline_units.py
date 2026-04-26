@@ -7,6 +7,7 @@ from deal_pipeline.accretion_dilution import run_accretion_dilution_analysis
 from deal_pipeline.automation import _load_watchlist
 from deal_pipeline.batch_screen import _score_row
 from deal_pipeline.blended_valuation import build_blended_valuation
+from deal_pipeline.backtesting import run_historical_backtest
 from deal_pipeline.config import PipelineConfig
 from deal_pipeline.contracts import validate_data_contracts
 from deal_pipeline.dcf import run_dcf_analysis
@@ -17,10 +18,12 @@ from deal_pipeline.ic_pack import create_ic_pack
 from deal_pipeline.lbo import run_lbo_underwriting
 from deal_pipeline.lineage import build_lineage_report
 from deal_pipeline.market_data import fetch_market_data_context
+from deal_pipeline.peer_selection import select_peers_with_factor_model
 from deal_pipeline.precedent_curation import curate_precedent_transactions
 from deal_pipeline.quality import evaluate_data_quality
 from deal_pipeline.scenarios import build_valuation_scenarios
 from deal_pipeline.sector_packs import apply_sector_pack
+from deal_pipeline.sensitivity import run_full_sensitivity
 from deal_pipeline.validation import run_model_validation_suite
 
 
@@ -253,6 +256,39 @@ class PipelineUnitTests(unittest.TestCase):
         self.assertEqual(out.summary["total_insights"], 2)
         self.assertEqual(out.summary["insights_with_citations"], 2)
         self.assertGreaterEqual(out.summary["citation_coverage_pct"], 1.0)
+
+    def test_sensitivity_engine(self) -> None:
+        target = pd.Series({"revenue": 1000.0, "ebitda_margin": 0.2, "total_debt": 700.0, "ebitda": 200.0, "ev_ebitda": 12.0})
+        out = run_full_sensitivity(target)
+        self.assertGreater(out.summary["scenario_count"], 10)
+        self.assertFalse(out.grid_table.empty)
+        self.assertFalse(out.tornado_table.empty)
+
+    def test_backtesting_engine(self) -> None:
+        precedents = pd.DataFrame(
+            [
+                {"target_company": "A", "announcement_date": "2020-01-01", "sector": "Healthcare", "revenue": 100.0, "ebitda": 20.0, "enterprise_value": 320.0, "ev_revenue": 3.2, "ev_ebitda": 16.0},
+                {"target_company": "B", "announcement_date": "2020-06-01", "sector": "Healthcare", "revenue": 110.0, "ebitda": 21.0, "enterprise_value": 350.0, "ev_revenue": 3.18, "ev_ebitda": 16.67},
+                {"target_company": "C", "announcement_date": "2021-01-01", "sector": "Healthcare", "revenue": 120.0, "ebitda": 25.0, "enterprise_value": 390.0, "ev_revenue": 3.25, "ev_ebitda": 15.6},
+                {"target_company": "D", "announcement_date": "2021-05-01", "sector": "Healthcare", "revenue": 90.0, "ebitda": 18.0, "enterprise_value": 280.0, "ev_revenue": 3.11, "ev_ebitda": 15.56},
+                {"target_company": "E", "announcement_date": "2021-10-01", "sector": "Healthcare", "revenue": 130.0, "ebitda": 26.0, "enterprise_value": 430.0, "ev_revenue": 3.31, "ev_ebitda": 16.54},
+            ]
+        )
+        out = run_historical_backtest(precedents)
+        self.assertEqual(out.summary["rows"], 5)
+        self.assertIn("forecast_error_pct", out.backtest_table.columns)
+
+    def test_peer_selection_scoring(self) -> None:
+        target = pd.Series({"sector": "Healthcare", "revenue": 1000.0, "ebitda_margin": 0.2, "revenue_growth_yoy": 0.08, "total_debt": 500.0, "ebitda": 200.0})
+        peers = pd.DataFrame(
+            [
+                {"ticker": "A", "sector": "Healthcare", "revenue": 900.0, "ebitda_margin": 0.19, "revenue_growth_yoy": 0.09, "total_debt": 400.0, "ebitda": 190.0, "enterprise_value": 3000.0},
+                {"ticker": "B", "sector": "Industrials", "revenue": 5000.0, "ebitda_margin": 0.1, "revenue_growth_yoy": 0.02, "total_debt": 2500.0, "ebitda": 300.0, "enterprise_value": 6000.0},
+            ]
+        )
+        out = select_peers_with_factor_model(target, peers, max_peers=2)
+        self.assertIn("peer_score", out.peer_table.columns)
+        self.assertIn("peer_score_explain", out.peer_table.columns)
 
     def test_contract_validation_fallback_or_pass(self) -> None:
         metrics = pd.DataFrame([{"ticker": "AAA", "revenue": 100.0, "ebitda": 20.0, "enterprise_value": 350.0}])

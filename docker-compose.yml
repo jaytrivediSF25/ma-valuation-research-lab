@@ -1,0 +1,18 @@
+services:
+  ma-pipeline:
+    build: .
+    image: ma-valuation-research-lab:latest
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+    command: ["python", "analyze_deal.py", "--target-ticker", "ABT"]
+
+  ma-api:
+    build: .
+    image: ma-valuation-research-lab:latest
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

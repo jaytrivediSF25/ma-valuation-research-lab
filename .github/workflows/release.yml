@@ -1,0 +1,27 @@
+name: Release Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Build smoke output
+        run: python analyze_deal.py --target-ticker ABT --disable-markdown-memo
+      - name: Upload output artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-output
+          path: output/*

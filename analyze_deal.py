@@ -5,6 +5,9 @@ from pathlib import Path
 from deal_pipeline.automation import run_scheduled_refresh
 from deal_pipeline import PipelineConfig, run_pipeline
 from deal_pipeline.batch_screen import run_portfolio_batch_screen
+from deal_pipeline.backtesting import run_historical_backtest
+from deal_pipeline.ingestion import ingest_data
+from deal_pipeline.normalization import normalize_data
 
 
 def parse_args() -> argparse.Namespace:
@@ -18,6 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-screen", action="store_true", help="Run portfolio batch screening mode")
     parser.add_argument("--batch-top-n", type=int, default=25, help="Top-N universe size for batch screening")
     parser.add_argument("--scheduled-refresh", action="store_true", help="Run scheduled watchlist refresh and alert generation")
+    parser.add_argument("--run-backtest-only", action="store_true", help="Run historical backtest module and exit")
     parser.add_argument("--watchlist-file", default="./data/watchlist.txt", help="Path to watchlist file (.txt or .json)")
     parser.add_argument("--state-file", default="./output/schedule_state.json", help="Path to persisted scheduler state file")
     parser.add_argument(
@@ -147,7 +151,22 @@ def main() -> None:
         print("Batch screen complete.")
         print(f"Screen CSV: {batch.csv_path}")
         print(f"Screen JSON: {batch.json_path}")
+        print(f"Job log CSV: {batch.log_path}")
+        print(f"Cache JSON: {batch.cache_path}")
         print(f"Rows: {batch.rows}")
+        return
+
+    if args.run_backtest_only:
+        ing = ingest_data(config.data_dir)
+        norm = normalize_data(ing)
+        out = run_historical_backtest(norm.precedents)
+        path = config.output_dir / "backtest_only.csv"
+        config.ensure_directories()
+        out.backtest_table.to_csv(path, index=False)
+        print("Backtest complete.")
+        print(f"Rows: {out.summary.get('rows')}")
+        print(f"MAE: {out.summary.get('mae_forecast_error_pct')}")
+        print(f"Output CSV: {path}")
         return
 
     if args.scheduled_refresh:

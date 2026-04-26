@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 import pandas as pd
 
 
@@ -52,6 +53,53 @@ def _iqr_bounds(series: pd.Series):
     return q1 - 1.5 * iqr, q3 + 1.5 * iqr
 
 
+def _text_relevance_scores(target_row: pd.Series, curated: pd.DataFrame) -> pd.Series:
+    if curated.empty:
+        return pd.Series(dtype=float)
+    try:
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
+    except Exception:
+        return pd.Series([0.5] * len(curated), index=curated.index, dtype=float)
+
+    target_blob = " ".join(
+        [
+            str(target_row.get("company_name") or ""),
+            str(target_row.get("sector") or ""),
+            str(target_row.get("ticker") or ""),
+        ]
+    ).strip()
+    row_blobs = (
+        curated.get("target_company", "").astype(str)
+        + " "
+        + curated.get("acquirer", "").astype(str)
+        + " "
+        + curated.get("sector", "").astype(str)
+        + " "
+        + curated.get("industry_tag", "").astype(str)
+    )
+    docs = [target_blob] + row_blobs.tolist()
+    vec = TfidfVectorizer(ngram_range=(1, 2), min_df=1)
+    mat = vec.fit_transform(docs)
+    sims = cosine_similarity(mat[0:1], mat[1:]).flatten()
+    if len(sims) == 0:
+        return pd.Series([0.5] * len(curated), index=curated.index, dtype=float)
+    return pd.Series(np.clip(sims, 0.0, 1.0), index=curated.index, dtype=float)
+
+
+def _median_contribution(series: pd.Series) -> pd.Series:
+    clean = pd.to_numeric(series, errors="coerce")
+    base = float(clean.median()) if clean.notna().any() else np.nan
+    out = []
+    for i in range(len(clean)):
+        leave_one = clean.drop(clean.index[i])
+        if leave_one.notna().any() and not np.isnan(base):
+            out.append(float(base - float(leave_one.median())))
+        else:
+            out.append(0.0)
+    return pd.Series(out, index=series.index, dtype=float)
+
+
 def curate_precedent_transactions(target_row: pd.Series, precedents_table: pd.DataFrame) -> PrecedentCurationResult:
     if precedents_table.empty:
         return PrecedentCurationResult(
@@ -90,6 +138,12 @@ def curate_precedent_transactions(target_row: pd.Series, precedents_table: pd.Da
     curated["size_similarity_score"] = size_scores
     curated["relevance_score"] = 0.6 * curated["sector_match_score"] + 0.4 * curated["size_similarity_score"]
     curated["industry_tag"] = industry_tags
+    curated["text_similarity_score"] = _text_relevance_scores(target_row, curated)
+    curated["relevance_score"] = (
+        0.45 * curated["sector_match_score"]
+        + 0.30 * curated["size_similarity_score"]
+        + 0.25 * curated["text_similarity_score"]
+    )
 
     evr_low, evr_high = _iqr_bounds(curated.get("ev_revenue", pd.Series(dtype=float)))
     eve_low, eve_high = _iqr_bounds(curated.get("ev_ebitda", pd.Series(dtype=float)))
@@ -108,11 +162,22 @@ def curate_precedent_transactions(target_row: pd.Series, precedents_table: pd.Da
     if kept.empty:
         kept = curated[~curated["is_outlier"]].copy()
 
+    if not kept.empty:
+        kept["median_contribution_ev_revenue"] = _median_contribution(kept["ev_revenue"])
+        kept["median_contribution_ev_ebitda"] = _median_contribution(kept["ev_ebitda"])
+        kept["rule_filter_explain"] = kept.apply(
+            lambda r: "accepted"
+            if bool(r.get("keep_flag"))
+            else ("outlier_removed" if bool(r.get("is_outlier")) else "low_relevance_removed"),
+            axis=1,
+        )
+
     summary = {
         "raw_transaction_count": int(len(curated)),
         "curated_transaction_count": int(len(kept)),
         "outliers_removed": int(curated["is_outlier"].sum()),
         "curated_median_ev_revenue": _f(pd.to_numeric(kept["ev_revenue"], errors="coerce").median()),
         "curated_median_ev_ebitda": _f(pd.to_numeric(kept["ev_ebitda"], errors="coerce").median()),
+        "median_contribution_abs_ev_revenue": _f(pd.to_numeric(kept.get("median_contribution_ev_revenue"), errors="coerce").abs().median()),
     }
     return PrecedentCurationResult(summary=summary, curated_table=kept.sort_values("relevance_score", ascending=False))

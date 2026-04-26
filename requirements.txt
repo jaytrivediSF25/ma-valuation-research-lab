@@ -21,3 +21,8 @@ pyarrow>=16.0.0
 fastapi>=0.111.0
 uvicorn>=0.30.0
 prefect>=3.0.0
+
+# Dev quality tooling
+ruff>=0.5.0
+mypy>=1.10.0
+bandit>=1.7.8

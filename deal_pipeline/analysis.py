@@ -4,6 +4,8 @@ from typing import Dict, Optional
 import numpy as np
 import pandas as pd
 
+from .peer_selection import select_peers_with_factor_model
+
 try:
     import duckdb
 except Exception:  # pragma: no cover
@@ -97,8 +99,8 @@ def run_comparable_analysis(
             peers = bounded
 
     peers = peers.dropna(subset=["ev_revenue", "ev_ebitda"], how="all")
-    if len(peers) > 25:
-        peers = peers.sort_values("enterprise_value", ascending=False).head(25)
+    selection = select_peers_with_factor_model(target_row=target_row, peers=peers, max_peers=25)
+    peers = selection.peer_table
 
     median_ev_rev = _median_with_duckdb(peers, "ev_revenue")
     median_ev_ebitda = _median_with_duckdb(peers, "ev_ebitda")
@@ -111,6 +113,7 @@ def run_comparable_analysis(
         "target_ev_ebitda": float(target_row["ev_ebitda"]) if pd.notna(target_row.get("ev_ebitda")) else None,
         "percentile_ev_revenue": _percentile_rank(peers["ev_revenue"], target_row.get("ev_revenue")),
         "percentile_ev_ebitda": _percentile_rank(peers["ev_ebitda"], target_row.get("ev_ebitda")),
+        "peer_factor_weights": selection.feature_weights,
     }
 
     cols = [
@@ -124,6 +127,8 @@ def run_comparable_analysis(
         "ev_ebitda",
         "revenue_growth_yoy",
         "ebitda_margin",
+        "peer_score",
+        "peer_score_explain",
     ]
     peer_table = peers[[c for c in cols if c in peers.columns]].sort_values("enterprise_value", ascending=False)
     return ComparableAnalysisResult(summary=summary, peer_table=peer_table)

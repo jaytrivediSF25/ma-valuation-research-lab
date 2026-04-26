@@ -6,6 +6,7 @@ import pandas as pd
 from .accretion_dilution import run_accretion_dilution_analysis
 from .analysis import run_comparable_analysis, run_precedent_analysis
 from .blended_valuation import build_blended_valuation
+from .backtesting import run_historical_backtest
 from .config import PipelineConfig
 from .contracts import ContractValidationResult, validate_data_contracts
 from .dcf import run_dcf_analysis
@@ -21,11 +22,14 @@ from .lineage import build_lineage_report
 from .market_data import fetch_market_data_context
 from .memo import build_markdown_memo
 from .normalization import normalize_data
+from .observability import RunLogger
 from .precedent_curation import curate_precedent_transactions
 from .quality import evaluate_data_quality
+from .role_packs import generate_role_packs
 from .robustness import compute_robustness_metrics
 from .scenarios import build_valuation_scenarios
 from .sector_packs import apply_sector_pack
+from .sensitivity import run_full_sensitivity
 from .validation import run_model_validation_suite
 
 
@@ -36,63 +40,90 @@ class PipelineRunResult:
 
 
 def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
-    ingested = ingest_data(config.data_dir)
-    normalized = normalize_data(ingested)
-    feature_output = engineer_features(normalized)
+    obs = RunLogger(config.output_dir)
+    with obs.timed("ingestion"):
+        ingested = ingest_data(config.data_dir)
+    with obs.timed("normalization"):
+        normalized = normalize_data(ingested)
+    with obs.timed("feature_engineering"):
+        feature_output = engineer_features(normalized)
     company_metrics = feature_output.company_metrics
     if company_metrics.empty:
         raise RuntimeError("No engineered company metrics available. Check input datasets in ./data.")
 
-    target_row = select_target_company(company_metrics, config)
-    runtime_config, sector_pack_summary, sector_pack_table = apply_sector_pack(config, str(target_row.get("sector") or ""))
-    comps = run_comparable_analysis(target_row, company_metrics, normalized.peers)
-    precedents = run_precedent_analysis(target_row, normalized.precedents, normalized.filings, company_metrics)
-    precedent_curation = curate_precedent_transactions(target_row, precedents.precedent_table)
+    with obs.timed("target_selection"):
+        target_row = select_target_company(company_metrics, config)
+    with obs.timed("sector_pack"):
+        runtime_config, sector_pack_summary, sector_pack_table = apply_sector_pack(config, str(target_row.get("sector") or ""))
+    with obs.timed("comps_analysis"):
+        comps = run_comparable_analysis(target_row, company_metrics, normalized.peers)
+    with obs.timed("precedent_analysis"):
+        precedents = run_precedent_analysis(target_row, normalized.precedents, normalized.filings, company_metrics)
+    with obs.timed("precedent_curation"):
+        precedent_curation = curate_precedent_transactions(target_row, precedents.precedent_table)
     if config.enable_pandera_validation:
-        contract_validation = validate_data_contracts(
-            company_metrics=company_metrics,
-            precedents_table=precedent_curation.curated_table,
-        )
+        with obs.timed("pandera_contracts"):
+            contract_validation = validate_data_contracts(
+                company_metrics=company_metrics,
+                precedents_table=precedent_curation.curated_table,
+            )
     else:
         contract_validation = ContractValidationResult(
             summary={"contracts_checked": 0, "contracts_failed": 0, "contracts_skipped": 1},
             table=pd.DataFrame([{"contract": "pipeline_contracts", "status": "skipped", "detail": "validation_disabled"}]),
         )
-    signals = generate_signals(target_row, comps.summary, precedents.summary, config=runtime_config)
-    quality = evaluate_data_quality(company_metrics, comps.summary, precedents.summary, config=runtime_config)
-    scenarios = build_valuation_scenarios(target_row, comps.summary, precedents.summary)
-    dcf = run_dcf_analysis(target_row, config=runtime_config)
-    robustness = compute_robustness_metrics(comps.peer_table, precedents.precedent_table, target_row)
-    acc_dil = run_accretion_dilution_analysis(target_row, company_metrics, config=runtime_config)
-    lbo = run_lbo_underwriting(target_row, config=runtime_config)
-    market_data = fetch_market_data_context(target_row, comps.peer_table, config=runtime_config)
-    blended = build_blended_valuation(
-        target_row=target_row,
-        comps_summary=comps.summary,
-        precedents_summary=precedents.summary,
-        scenarios_summary=scenarios.summary,
-        dcf_summary=dcf.summary,
-        config=runtime_config,
-    )
-    validation = run_model_validation_suite(
-        target_row=target_row,
-        comps_summary=comps.summary,
-        precedents_summary=precedents.summary,
-        robustness_summary=robustness.summary,
-        quality_summary={"score": quality.score},
-        dcf_summary=dcf.summary,
-    )
-    lineage = build_lineage_report(
-        target_row=target_row,
-        additional_sections={
-            "dcf_analysis": dcf.summary,
-            "capital_structure": dcf.capital_structure_summary,
-            "blended_valuation": blended.summary,
-            "accretion_dilution": acc_dil.summary,
-            "lbo_underwriting": lbo.summary,
-            "validation": validation.summary,
-        },
-    )
+    with obs.timed("signals"):
+        signals = generate_signals(target_row, comps.summary, precedents.summary, config=runtime_config)
+    with obs.timed("quality"):
+        quality = evaluate_data_quality(company_metrics, comps.summary, precedents.summary, config=runtime_config)
+    with obs.timed("scenarios"):
+        scenarios = build_valuation_scenarios(target_row, comps.summary, precedents.summary)
+    with obs.timed("dcf"):
+        dcf = run_dcf_analysis(target_row, config=runtime_config)
+    with obs.timed("robustness"):
+        robustness = compute_robustness_metrics(comps.peer_table, precedents.precedent_table, target_row)
+    with obs.timed("accretion_dilution"):
+        acc_dil = run_accretion_dilution_analysis(target_row, company_metrics, config=runtime_config)
+    with obs.timed("lbo"):
+        lbo = run_lbo_underwriting(target_row, config=runtime_config)
+    with obs.timed("market_data"):
+        market_data = fetch_market_data_context(target_row, comps.peer_table, config=runtime_config)
+    with obs.timed("blended"):
+        blended = build_blended_valuation(
+            target_row=target_row,
+            comps_summary=comps.summary,
+            precedents_summary=precedents.summary,
+            scenarios_summary=scenarios.summary,
+            dcf_summary=dcf.summary,
+            config=runtime_config,
+        )
+    with obs.timed("validation"):
+        validation = run_model_validation_suite(
+            target_row=target_row,
+            comps_summary=comps.summary,
+            precedents_summary=precedents.summary,
+            robustness_summary=robustness.summary,
+            quality_summary={"score": quality.score},
+            dcf_summary=dcf.summary,
+        )
+    with obs.timed("sensitivity"):
+        sensitivity = run_full_sensitivity(target_row)
+    with obs.timed("backtesting"):
+        backtest = run_historical_backtest(precedent_curation.curated_table)
+    with obs.timed("lineage"):
+        lineage = build_lineage_report(
+            target_row=target_row,
+            additional_sections={
+                "dcf_analysis": dcf.summary,
+                "capital_structure": dcf.capital_structure_summary,
+                "blended_valuation": blended.summary,
+                "accretion_dilution": acc_dil.summary,
+                "lbo_underwriting": lbo.summary,
+                "validation": validation.summary,
+                "sensitivity": sensitivity.summary,
+                "backtest": backtest.summary,
+            },
+        )
 
     structured_payload = {
         "company": {
@@ -138,6 +169,8 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "lineage": lineage.summary,
         "validation": validation.summary,
         "contract_validation": contract_validation.summary,
+        "sensitivity": sensitivity.summary,
+        "backtest": backtest.summary,
     }
     insights_raw = generate_ai_insights(structured_payload, config.openai_model)
     evidence = apply_evidence_citations(insights_raw)
@@ -181,6 +214,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "contracts_checked": contract_validation.summary.get("contracts_checked"),
         "contracts_failed": contract_validation.summary.get("contracts_failed"),
         "contracts_skipped": contract_validation.summary.get("contracts_skipped"),
+        "sensitivity_scenario_count": sensitivity.summary.get("scenario_count"),
+        "backtest_rows": backtest.summary.get("rows"),
+        "backtest_mae_forecast_error_pct": backtest.summary.get("mae_forecast_error_pct"),
     }
 
     exports = export_outputs(
@@ -209,6 +245,8 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         ic_pack_summary=ic_pack.summary,
         evidence_summary=evidence.summary,
         contract_validation_summary=contract_validation.summary,
+        sensitivity_summary=sensitivity.summary,
+        backtest_summary=backtest.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -229,6 +267,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         evidence_table=evidence.evidence_table,
         quality_table=quality.check_table,
         contract_validation_table=contract_validation.table,
+        sensitivity_grid_table=sensitivity.grid_table,
+        sensitivity_tornado_table=sensitivity.tornado_table,
+        backtest_table=backtest.backtest_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,
     )
@@ -252,11 +293,19 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         diagnostic["duckdb_rows_written"] = int(sum(duckdb_result.tables_written.values())) if duckdb_result.tables_written else 0
 
     if config.enable_markdown_memo:
-        memo_path = build_markdown_memo(
-            config=config,
-            structured_report={**structured_payload, "insights": insights},
-            diagnostics=diagnostic,
-        )
+        with obs.timed("memo"):
+            memo_path = build_markdown_memo(
+                config=config,
+                structured_report={**structured_payload, "insights": insights},
+                diagnostics=diagnostic,
+            )
         diagnostic["memo_path"] = str(memo_path)
+
+    with obs.timed("role_packs"):
+        role_packs = generate_role_packs(config.output_dir, exports.final_report.model_dump(mode="json"))
+    diagnostic["role_pack_dir"] = str(role_packs.pack_dir)
+    diagnostic["role_pack_files"] = len(role_packs.files)
+    obs_path = obs.finalize(extra=diagnostic)
+    diagnostic["observability_path"] = str(obs_path)
 
     return PipelineRunResult(export_artifacts=exports, diagnostic=diagnostic)

@@ -411,23 +411,46 @@ Current test coverage validates:
 
 ---
 
-## 11. Risk and Limitations
+## 11. Enterprise Upgrade Map
 
-1. SEC concept mapping can vary by filer taxonomy quality.
-2. Precedent fallback from filings is directional, not equal to curated M&A databases.
-3. FX map is static and should be replaced with dated FX curves for production valuation parity.
-4. DCF assumptions are intentionally transparent/simple; advanced capital-structure modeling is not yet included.
-5. Statistical robustness depends on sample depth.
+The repository now includes all major enterprise upgrades:
+
+1. Reproducible build layer via `Makefile`
+2. Strict input and output contract checks via `scripts/check_contracts.py`
+3. Historical backtesting engine via `deal_pipeline/backtesting.py`
+4. Full sensitivity and tornado analysis via `deal_pipeline/sensitivity.py`
+5. Factor based peer selection with explainable scores via `deal_pipeline/peer_selection.py`
+6. Embedding style precedent relevance and median contribution tracing via `deal_pipeline/precedent_curation.py`
+7. Parallel batch screening with caching and job logs via `deal_pipeline/batch_screen.py`
+8. Structured observability with run IDs timings memory and error traces via `deal_pipeline/observability.py`
+9. CI CD with lint typing security contracts tests and Docker build in `.github/workflows/`
+10. Container runtime via `Dockerfile` and `docker-compose.yml`
+11. Versioned API contract and Postman collection in `docs/api/`
+12. Governance documentation in `docs/adr/` and `docs/governance/`
+13. Benchmark fixtures and snapshot tests in `tests/fixtures/` and `tests/test_snapshot_outputs.py`
+14. Role based output packs for MD VP Associate and data engineering via `deal_pipeline/role_packs.py`
 
 ---
 
-## 12. Recommended Next Expansions
+## 12. Clone and Run
 
-1. Transaction-level synergy and accretion/dilution module.
-2. Multi-currency historical FX normalization with date-aware rates.
-3. Capital structure scenarios and equity value bridge.
-4. Sector-specific multiple rules and outlier treatment policies.
-5. Explainability report that links each insight line to exact metric inputs.
+```bash
+git clone https://github.com/jaytrivediSF25/ma-valuation-research-lab.git
+cd ma-valuation-research-lab
+python3 -m pip install -r requirements.txt
+make analyze
+```
+
+Useful commands:
+
+```bash
+make contracts
+make test
+make lint
+python3 analyze_deal.py --run-backtest-only --data-dir ./data --output-dir ./output
+python3 scripts/generate_role_packs.py --target-ticker ABT
+uvicorn app.main:app --reload
+```
 
 ---
 
@@ -435,4 +458,4 @@ Current test coverage validates:
 
 Current package version:
 
-- `deal_pipeline.__version__ = 3.0.0`
+- `deal_pipeline.__version__ = 4.0.0`

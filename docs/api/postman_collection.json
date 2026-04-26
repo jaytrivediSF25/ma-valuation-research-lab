@@ -1,0 +1,27 @@
+{
+  "info": {
+    "name": "M&A Valuation Research Lab",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:8000/health", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["health"] }
+      }
+    },
+    {
+      "name": "Run Pipeline",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"data_dir\": \"./data\",\n  \"output_dir\": \"./output\",\n  \"target_ticker\": \"ABT\",\n  \"enable_market_data\": false\n}"
+        },
+        "url": { "raw": "http://localhost:8000/api/v1/run", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "v1", "run"] }
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -28,18 +28,18 @@ class DealRunRequest(BaseModel):
 class DealRunResponse(BaseModel):
     report_json_path: str
     workbook_path: str
-    diagnostics: dict = Field(default_factory=dict)
+    diagnostics: Dict = Field(default_factory=dict)
 
 
-app = FastAPI(title="M&A Valuation Research Lab API", version="3.1.0")
+app = FastAPI(title="M&A Valuation Research Lab API", version="3.2.0")
 
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    return {"status": "ok", "service": "ma-valuation-research-lab"}
 
 
-@app.post("/run", response_model=DealRunResponse)
+@app.post("/api/v1/run", response_model=DealRunResponse)
 def run_deal_pipeline(payload: DealRunRequest) -> DealRunResponse:
     config = PipelineConfig(
         data_dir=Path(payload.data_dir).resolve(),

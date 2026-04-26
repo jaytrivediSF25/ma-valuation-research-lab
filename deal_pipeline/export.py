@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
@@ -39,7 +39,7 @@ class ExportArtifacts:
     final_report: FinalReport
 
 
-def _as_float(value):
+def _as_float(value: Any) -> Optional[float]:
     if value is None:
         return None
     try:
@@ -74,6 +74,8 @@ def _build_summary_sheet(
     ic_pack_summary: Dict[str, Any],
     evidence_summary: Dict[str, Any],
     contract_validation_summary: Dict[str, Any],
+    sensitivity_summary: Optional[Dict[str, Any]],
+    backtest_summary: Optional[Dict[str, Any]],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -110,11 +112,8 @@ def _build_summary_sheet(
         ("dcf_implied_ev_base", dcf_summary.get("implied_ev_base")),
         ("dcf_implied_ev_high", dcf_summary.get("implied_ev_high")),
         ("dcf_gap_to_current", dcf_summary.get("dcf_gap_to_current")),
-        ("dcf_implied_equity_value_base", dcf_summary.get("implied_equity_value_base")),
         ("dcf_implied_share_price_base", dcf_summary.get("implied_share_price_base")),
-        ("dcf_tax_shield_pv_base", dcf_summary.get("tax_shield_pv_base")),
         ("capital_structure_net_debt_base", capital_structure_summary.get("net_debt_base")),
-        ("capital_structure_debt_years_modeled", capital_structure_summary.get("debt_years_modeled")),
         ("comps_ev_rev_ci_low", robustness_summary.get("comps_ev_revenue_ci_low")),
         ("comps_ev_rev_ci_high", robustness_summary.get("comps_ev_revenue_ci_high")),
         ("target_ev_rev_zscore", robustness_summary.get("target_ev_revenue_zscore")),
@@ -125,22 +124,20 @@ def _build_summary_sheet(
         ("proforma_net_leverage", accretion_dilution_summary.get("proforma_net_leverage")),
         ("lbo_moic", lbo_summary.get("moic")),
         ("lbo_irr", lbo_summary.get("irr")),
-        ("lbo_exit_net_leverage", lbo_summary.get("exit_net_leverage")),
         ("market_data_status", market_data_summary.get("status")),
-        ("market_data_target_price", market_data_summary.get("target_price")),
         ("precedent_curated_count", precedent_curation_summary.get("curated_transaction_count")),
-        ("precedent_outliers_removed", precedent_curation_summary.get("outliers_removed")),
         ("sector_pack", sector_pack_summary.get("sector_pack")),
-        ("sector_pack_overrides", sector_pack_summary.get("override_count")),
         ("lineage_row_count", lineage_summary.get("lineage_row_count")),
         ("validation_score", validation_summary.get("validation_score")),
-        ("validation_warn_count", validation_summary.get("validation_warn_count")),
         ("ic_pack_generated", ic_pack_summary.get("generated")),
-        ("ic_pack_dir", ic_pack_summary.get("pack_dir")),
         ("citation_coverage_pct", evidence_summary.get("citation_coverage_pct")),
         ("contracts_checked", contract_validation_summary.get("contracts_checked")),
         ("contracts_failed", contract_validation_summary.get("contracts_failed")),
         ("contracts_skipped", contract_validation_summary.get("contracts_skipped")),
+        ("sensitivity_scenario_count", (sensitivity_summary or {}).get("scenario_count")),
+        ("sensitivity_p50_ev", (sensitivity_summary or {}).get("probability_band_p50")),
+        ("backtest_rows", (backtest_summary or {}).get("rows")),
+        ("backtest_mae_error_pct", (backtest_summary or {}).get("mae_forecast_error_pct")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -171,6 +168,8 @@ def export_outputs(
     ic_pack_summary: Dict[str, Any],
     evidence_summary: Dict[str, Any],
     contract_validation_summary: Dict[str, Any],
+    sensitivity_summary: Optional[Dict[str, Any]],
+    backtest_summary: Optional[Dict[str, Any]],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -191,49 +190,15 @@ def export_outputs(
     evidence_table: pd.DataFrame,
     quality_table: pd.DataFrame,
     contract_validation_table: pd.DataFrame,
+    sensitivity_grid_table: Optional[pd.DataFrame],
+    sensitivity_tornado_table: Optional[pd.DataFrame],
+    backtest_table: Optional[pd.DataFrame],
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
 ) -> ExportArtifacts:
     config.ensure_directories()
     ticker = str(target_row.get("ticker") or "target").upper()
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-
-    financials = FinancialSnapshot(
-        as_of_date=str(target_row.get("as_of_date")) if pd.notna(target_row.get("as_of_date")) else None,
-        revenue=_as_float(target_row.get("revenue")),
-        revenue_growth_yoy=_as_float(target_row.get("revenue_growth_yoy")),
-        ebitda=_as_float(target_row.get("ebitda")),
-        ebitda_margin=_as_float(target_row.get("ebitda_margin")),
-        enterprise_value=_as_float(target_row.get("enterprise_value")),
-        ev_revenue=_as_float(target_row.get("ev_revenue")),
-        ev_ebitda=_as_float(target_row.get("ev_ebitda")),
-        market_cap=_as_float(target_row.get("market_cap")),
-        total_debt=_as_float(target_row.get("total_debt")),
-        cash=_as_float(target_row.get("cash")),
-        net_debt=_as_float(target_row.get("net_debt")),
-        shares_outstanding=_as_float(target_row.get("shares_outstanding")),
-        interest_expense=_as_float(target_row.get("interest_expense")),
-        implied_share_price_current=_as_float(target_row.get("implied_share_price_current")),
-    )
-    comparable_analysis = ComparableAnalysis(**comps_summary)
-    precedent_analysis = PrecedentAnalysis(**precedents_summary)
-    signal_set = SignalSet(**signals)
-    data_quality_set = DataQuality(**data_quality)
-    valuation_scenario_set = ValuationScenarioSummary(**valuation_scenarios)
-    dcf_set = DCFSummary(**dcf_summary)
-    capital_structure_set = CapitalStructureSummary(**capital_structure_summary)
-    robustness_set = RobustnessSummary(**robustness_summary)
-    blend_set = BlendedValuationSummary(**blended_valuation_summary)
-    acc_dil_set = AccretionDilutionSummary(**accretion_dilution_summary)
-    lbo_set = LBOSummary(**lbo_summary)
-    market_data_set = MarketDataSummary(**market_data_summary)
-    precedent_curation_set = PrecedentCurationSummary(**precedent_curation_summary)
-    sector_pack_set = SectorPackSummary(**sector_pack_summary)
-    lineage_set = LineageSummary(**lineage_summary)
-    validation_set = ValidationSummary(**validation_summary)
-    ic_pack_set = ICPackSummary(**ic_pack_summary)
-    evidence_set = EvidenceSummary(**evidence_summary)
-    contract_validation_set = ContractValidationSummary(**contract_validation_summary)
 
     report = FinalReport(
         company={
@@ -242,26 +207,42 @@ def export_outputs(
             "cik": target_row.get("cik"),
             "sector": target_row.get("sector"),
         },
-        financials=financials,
-        comparable_analysis=comparable_analysis,
-        precedent_transactions=precedent_analysis,
-        signals=signal_set,
-        data_quality=data_quality_set,
-        valuation_scenarios=valuation_scenario_set,
-        dcf_analysis=dcf_set,
-        capital_structure=capital_structure_set,
-        robustness=robustness_set,
-        blended_valuation=blend_set,
-        accretion_dilution=acc_dil_set,
-        lbo_underwriting=lbo_set,
-        market_data=market_data_set,
-        precedent_curation=precedent_curation_set,
-        sector_pack=sector_pack_set,
-        lineage=lineage_set,
-        validation=validation_set,
-        ic_pack=ic_pack_set,
-        evidence_citations=evidence_set,
-        contract_validation=contract_validation_set,
+        financials=FinancialSnapshot(
+            as_of_date=str(target_row.get("as_of_date")) if pd.notna(target_row.get("as_of_date")) else None,
+            revenue=_as_float(target_row.get("revenue")),
+            revenue_growth_yoy=_as_float(target_row.get("revenue_growth_yoy")),
+            ebitda=_as_float(target_row.get("ebitda")),
+            ebitda_margin=_as_float(target_row.get("ebitda_margin")),
+            enterprise_value=_as_float(target_row.get("enterprise_value")),
+            ev_revenue=_as_float(target_row.get("ev_revenue")),
+            ev_ebitda=_as_float(target_row.get("ev_ebitda")),
+            market_cap=_as_float(target_row.get("market_cap")),
+            total_debt=_as_float(target_row.get("total_debt")),
+            cash=_as_float(target_row.get("cash")),
+            net_debt=_as_float(target_row.get("net_debt")),
+            shares_outstanding=_as_float(target_row.get("shares_outstanding")),
+            interest_expense=_as_float(target_row.get("interest_expense")),
+            implied_share_price_current=_as_float(target_row.get("implied_share_price_current")),
+        ),
+        comparable_analysis=ComparableAnalysis(**comps_summary),
+        precedent_transactions=PrecedentAnalysis(**precedents_summary),
+        signals=SignalSet(**signals),
+        data_quality=DataQuality(**data_quality),
+        valuation_scenarios=ValuationScenarioSummary(**valuation_scenarios),
+        dcf_analysis=DCFSummary(**dcf_summary),
+        capital_structure=CapitalStructureSummary(**capital_structure_summary),
+        robustness=RobustnessSummary(**robustness_summary),
+        blended_valuation=BlendedValuationSummary(**blended_valuation_summary),
+        accretion_dilution=AccretionDilutionSummary(**accretion_dilution_summary),
+        lbo_underwriting=LBOSummary(**lbo_summary),
+        market_data=MarketDataSummary(**market_data_summary),
+        precedent_curation=PrecedentCurationSummary(**precedent_curation_summary),
+        sector_pack=SectorPackSummary(**sector_pack_summary),
+        lineage=LineageSummary(**lineage_summary),
+        validation=ValidationSummary(**validation_summary),
+        ic_pack=ICPackSummary(**ic_pack_summary),
+        evidence_citations=EvidenceSummary(**evidence_summary),
+        contract_validation=ContractValidationSummary(**contract_validation_summary),
         insights=insights,
         diagnostics=diagnostics,
         conclusion=insights["conclusion"],
@@ -269,7 +250,6 @@ def export_outputs(
 
     report_json_path = config.output_dir / f"deal_analysis_{ticker}_{timestamp}.json"
     workbook_path = config.output_dir / f"deal_analysis_{ticker}_{timestamp}.xlsx"
-
     report_json_path.write_text(json.dumps(report.model_dump(mode="json"), indent=2), encoding="utf-8")
 
     summary_df = _build_summary_sheet(
@@ -293,10 +273,12 @@ def export_outputs(
         ic_pack_summary=ic_pack_summary,
         evidence_summary=evidence_summary,
         contract_validation_summary=contract_validation_summary,
+        sensitivity_summary=sensitivity_summary,
+        backtest_summary=backtest_summary,
         insights=insights,
     )
-    raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()
 
+    raw_for_excel = raw_data_table.head(config.max_raw_rows_for_excel).copy()
     with pd.ExcelWriter(workbook_path, engine="openpyxl") as writer:
         summary_df.to_excel(writer, index=False, sheet_name="summary")
         comps_table.to_excel(writer, index=False, sheet_name="comps")
@@ -318,6 +300,12 @@ def export_outputs(
         evidence_table.to_excel(writer, index=False, sheet_name="evidence")
         quality_table.to_excel(writer, index=False, sheet_name="quality")
         contract_validation_table.to_excel(writer, index=False, sheet_name="contracts")
+        if sensitivity_grid_table is not None and not sensitivity_grid_table.empty:
+            sensitivity_grid_table.to_excel(writer, index=False, sheet_name="sens_grid")
+        if sensitivity_tornado_table is not None and not sensitivity_tornado_table.empty:
+            sensitivity_tornado_table.to_excel(writer, index=False, sheet_name="sens_tornado")
+        if backtest_table is not None and not backtest_table.empty:
+            backtest_table.to_excel(writer, index=False, sheet_name="backtest")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 
     return ExportArtifacts(

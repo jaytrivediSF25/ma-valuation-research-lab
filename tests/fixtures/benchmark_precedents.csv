@@ -1,0 +1,6 @@
+target_company,acquirer,announcement_date,sector,revenue,ebitda,enterprise_value,ev_revenue,ev_ebitda
+Alpha Med,Buyer A,2021-01-15,Healthcare,1000,220,3400,3.4,15.45
+Beta Med,Buyer B,2021-07-09,Healthcare,900,180,2800,3.11,15.56
+Gamma Health,Buyer C,2022-03-20,Healthcare,1200,260,4200,3.5,16.15
+Delta Health,Buyer D,2022-09-11,Healthcare,800,150,2400,3.0,16.0
+Epsilon Med,Buyer E,2023-02-17,Healthcare,1100,240,3900,3.55,16.25

@@ -1,0 +1,41 @@
+openapi: 3.0.3
+info:
+  title: M&A Valuation Research Lab API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+paths:
+  /health:
+    get:
+      summary: Service health check
+      responses:
+        '200':
+          description: OK
+  /api/v1/run:
+    post:
+      summary: Execute a full valuation pipeline run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data_dir: { type: string, example: ./data }
+                output_dir: { type: string, example: ./output }
+                target_ticker: { type: string, example: ABT }
+                openai_model: { type: string, example: gpt-4o-mini }
+                enable_market_data: { type: boolean, example: false }
+      responses:
+        '200':
+          description: Pipeline execution succeeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report_json_path: { type: string }
+                  workbook_path: { type: string }
+                  diagnostics: { type: object }
+        '500':
+          description: Pipeline execution error
