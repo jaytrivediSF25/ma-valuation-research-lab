@@ -433,6 +433,7 @@ The repository now includes all major enterprise upgrades:
 16. Deal risk gating with red amber green hard checks via `deal_pipeline/strategic.py`
 17. Negotiation playbook generation with opening bid walk away and stretch terms via `deal_pipeline/strategic.py`
 18. Arsenal50 execution matrix with 50 tactical checks and readiness scoring via `deal_pipeline/arsenal50.py`
+19. Arsenal300 execution matrix with 300 large scale initiatives and theme level risk surfacing via `deal_pipeline/arsenal300.py`
 
 ---
 

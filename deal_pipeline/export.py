@@ -80,6 +80,7 @@ def _build_summary_sheet(
     risk_gate_summary: Optional[Dict[str, Any]],
     negotiation_summary: Optional[Dict[str, Any]],
     arsenal_summary: Optional[Dict[str, Any]],
+    arsenal300_summary: Optional[Dict[str, Any]],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -151,6 +152,10 @@ def _build_summary_sheet(
         ("arsenal_idea_count", (arsenal_summary or {}).get("arsenal_idea_count")),
         ("arsenal_pass_count", (arsenal_summary or {}).get("arsenal_pass_count")),
         ("arsenal_readiness_pct", (arsenal_summary or {}).get("arsenal_readiness_pct")),
+        ("arsenal300_idea_count", (arsenal300_summary or {}).get("arsenal300_idea_count")),
+        ("arsenal300_pass_count", (arsenal300_summary or {}).get("arsenal300_pass_count")),
+        ("arsenal300_readiness_pct", (arsenal300_summary or {}).get("arsenal300_readiness_pct")),
+        ("arsenal300_top_risk_theme", (arsenal300_summary or {}).get("arsenal300_top_risk_theme")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -187,6 +192,7 @@ def export_outputs(
     risk_gate_summary: Optional[Dict[str, Any]],
     negotiation_summary: Optional[Dict[str, Any]],
     arsenal_summary: Optional[Dict[str, Any]],
+    arsenal300_summary: Optional[Dict[str, Any]],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -214,6 +220,7 @@ def export_outputs(
     risk_gate_table: Optional[pd.DataFrame],
     negotiation_table: Optional[pd.DataFrame],
     arsenal_table: Optional[pd.DataFrame],
+    arsenal300_table: Optional[pd.DataFrame],
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
 ) -> ExportArtifacts:
@@ -300,6 +307,7 @@ def export_outputs(
         risk_gate_summary=risk_gate_summary,
         negotiation_summary=negotiation_summary,
         arsenal_summary=arsenal_summary,
+        arsenal300_summary=arsenal300_summary,
         insights=insights,
     )
 
@@ -339,6 +347,8 @@ def export_outputs(
             negotiation_table.to_excel(writer, index=False, sheet_name="negotiation")
         if arsenal_table is not None and not arsenal_table.empty:
             arsenal_table.to_excel(writer, index=False, sheet_name="arsenal50")
+        if arsenal300_table is not None and not arsenal300_table.empty:
+            arsenal300_table.to_excel(writer, index=False, sheet_name="arsenal300")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 
     return ExportArtifacts(
