@@ -76,6 +76,9 @@ def _build_summary_sheet(
     contract_validation_summary: Dict[str, Any],
     sensitivity_summary: Optional[Dict[str, Any]],
     backtest_summary: Optional[Dict[str, Any]],
+    buyer_universe_summary: Optional[Dict[str, Any]],
+    risk_gate_summary: Optional[Dict[str, Any]],
+    negotiation_summary: Optional[Dict[str, Any]],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -138,6 +141,12 @@ def _build_summary_sheet(
         ("sensitivity_p50_ev", (sensitivity_summary or {}).get("probability_band_p50")),
         ("backtest_rows", (backtest_summary or {}).get("rows")),
         ("backtest_mae_error_pct", (backtest_summary or {}).get("mae_forecast_error_pct")),
+        ("buyer_universe_count", (buyer_universe_summary or {}).get("buyer_count")),
+        ("top_buyer", (buyer_universe_summary or {}).get("top_buyer")),
+        ("risk_gate_overall", (risk_gate_summary or {}).get("overall_gate")),
+        ("risk_gate_warn_count", (risk_gate_summary or {}).get("warn_count")),
+        ("negotiation_opening_bid_ev", (negotiation_summary or {}).get("opening_bid_ev")),
+        ("negotiation_walk_away_ev", (negotiation_summary or {}).get("walk_away_ev")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -170,6 +179,9 @@ def export_outputs(
     contract_validation_summary: Dict[str, Any],
     sensitivity_summary: Optional[Dict[str, Any]],
     backtest_summary: Optional[Dict[str, Any]],
+    buyer_universe_summary: Optional[Dict[str, Any]],
+    risk_gate_summary: Optional[Dict[str, Any]],
+    negotiation_summary: Optional[Dict[str, Any]],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -193,6 +205,9 @@ def export_outputs(
     sensitivity_grid_table: Optional[pd.DataFrame],
     sensitivity_tornado_table: Optional[pd.DataFrame],
     backtest_table: Optional[pd.DataFrame],
+    buyer_universe_table: Optional[pd.DataFrame],
+    risk_gate_table: Optional[pd.DataFrame],
+    negotiation_table: Optional[pd.DataFrame],
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
 ) -> ExportArtifacts:
@@ -275,6 +290,9 @@ def export_outputs(
         contract_validation_summary=contract_validation_summary,
         sensitivity_summary=sensitivity_summary,
         backtest_summary=backtest_summary,
+        buyer_universe_summary=buyer_universe_summary,
+        risk_gate_summary=risk_gate_summary,
+        negotiation_summary=negotiation_summary,
         insights=insights,
     )
 
@@ -306,6 +324,12 @@ def export_outputs(
             sensitivity_tornado_table.to_excel(writer, index=False, sheet_name="sens_tornado")
         if backtest_table is not None and not backtest_table.empty:
             backtest_table.to_excel(writer, index=False, sheet_name="backtest")
+        if buyer_universe_table is not None and not buyer_universe_table.empty:
+            buyer_universe_table.to_excel(writer, index=False, sheet_name="buyers")
+        if risk_gate_table is not None and not risk_gate_table.empty:
+            risk_gate_table.to_excel(writer, index=False, sheet_name="risk_gate")
+        if negotiation_table is not None and not negotiation_table.empty:
+            negotiation_table.to_excel(writer, index=False, sheet_name="negotiation")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 
     return ExportArtifacts(

@@ -429,6 +429,9 @@ The repository now includes all major enterprise upgrades:
 12. Governance documentation in `docs/adr/` and `docs/governance/`
 13. Benchmark fixtures and snapshot tests in `tests/fixtures/` and `tests/test_snapshot_outputs.py`
 14. Role based output packs for MD VP Associate and data engineering via `deal_pipeline/role_packs.py`
+15. Buyer universe scoring with strategic and financial buyer ranking via `deal_pipeline/strategic.py`
+16. Deal risk gating with red amber green hard checks via `deal_pipeline/strategic.py`
+17. Negotiation playbook generation with opening bid walk away and stretch terms via `deal_pipeline/strategic.py`
 
 ---
 

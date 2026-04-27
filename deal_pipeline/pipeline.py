@@ -31,6 +31,7 @@ from .robustness import compute_robustness_metrics
 from .scenarios import build_valuation_scenarios
 from .sector_packs import apply_sector_pack
 from .sensitivity import run_full_sensitivity
+from .strategic import build_buyer_universe, build_negotiation_playbook, run_deal_risk_gate
 from .validation import run_model_validation_suite
 
 
@@ -111,6 +112,25 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         sensitivity = run_full_sensitivity(target_row)
     with obs.timed("backtesting"):
         backtest = run_historical_backtest(precedent_curation.curated_table)
+    with obs.timed("buyer_universe"):
+        buyer_universe = build_buyer_universe(target_row=target_row, company_metrics=company_metrics, peer_table=comps.peer_table)
+    with obs.timed("risk_gate"):
+        risk_gate = run_deal_risk_gate(
+            target_row=target_row,
+            comps_summary=comps.summary,
+            precedents_summary=precedents.summary,
+            dcf_summary=dcf.summary,
+            quality_score=quality.score,
+            validation_summary=validation.summary,
+            sensitivity_summary=sensitivity.summary,
+        )
+    with obs.timed("negotiation_playbook"):
+        negotiation = build_negotiation_playbook(
+            target_row=target_row,
+            blended_summary=blended.summary,
+            precedents_summary=precedents.summary,
+            sensitivity_summary=sensitivity.summary,
+        )
     with obs.timed("lineage"):
         lineage = build_lineage_report(
             target_row=target_row,
@@ -123,6 +143,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
                 "validation": validation.summary,
                 "sensitivity": sensitivity.summary,
                 "backtest": backtest.summary,
+                "buyer_universe": buyer_universe.summary,
+                "risk_gate": risk_gate.summary,
+                "negotiation_playbook": negotiation.summary,
             },
         )
 
@@ -172,6 +195,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "contract_validation": contract_validation.summary,
         "sensitivity": sensitivity.summary,
         "backtest": backtest.summary,
+        "buyer_universe": buyer_universe.summary,
+        "risk_gate": risk_gate.summary,
+        "negotiation_playbook": negotiation.summary,
     }
     insights_raw = generate_ai_insights(structured_payload, config.openai_model)
     evidence = apply_evidence_citations(insights_raw)
@@ -218,6 +244,10 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "sensitivity_scenario_count": sensitivity.summary.get("scenario_count"),
         "backtest_rows": backtest.summary.get("rows"),
         "backtest_mae_forecast_error_pct": backtest.summary.get("mae_forecast_error_pct"),
+        "buyer_universe_count": buyer_universe.summary.get("buyer_count"),
+        "top_buyer": buyer_universe.summary.get("top_buyer"),
+        "risk_gate_overall": risk_gate.summary.get("overall_gate"),
+        "negotiation_walk_away_ev": negotiation.summary.get("walk_away_ev"),
     }
 
     exports = export_outputs(
@@ -248,6 +278,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         contract_validation_summary=contract_validation.summary,
         sensitivity_summary=sensitivity.summary,
         backtest_summary=backtest.summary,
+        buyer_universe_summary=buyer_universe.summary,
+        risk_gate_summary=risk_gate.summary,
+        negotiation_summary=negotiation.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -271,6 +304,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         sensitivity_grid_table=sensitivity.grid_table,
         sensitivity_tornado_table=sensitivity.tornado_table,
         backtest_table=backtest.backtest_table,
+        buyer_universe_table=buyer_universe.buyer_table,
+        risk_gate_table=risk_gate.gate_table,
+        negotiation_table=negotiation.playbook_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,
     )

@@ -24,6 +24,7 @@ from deal_pipeline.quality import evaluate_data_quality
 from deal_pipeline.scenarios import build_valuation_scenarios
 from deal_pipeline.sector_packs import apply_sector_pack
 from deal_pipeline.sensitivity import run_full_sensitivity
+from deal_pipeline.strategic import build_buyer_universe, build_negotiation_playbook, run_deal_risk_gate
 from deal_pipeline.validation import run_model_validation_suite
 
 
@@ -289,6 +290,44 @@ class PipelineUnitTests(unittest.TestCase):
         out = select_peers_with_factor_model(target, peers, max_peers=2)
         self.assertIn("peer_score", out.peer_table.columns)
         self.assertIn("peer_score_explain", out.peer_table.columns)
+
+    def test_buyer_universe(self) -> None:
+        target = pd.Series({"ticker": "TGT", "sector": "Healthcare", "enterprise_value": 4000.0, "revenue": 1200.0})
+        metrics = pd.DataFrame(
+            [
+                {"ticker": "A", "company_name": "A Co", "sector": "Healthcare", "enterprise_value": 20000.0, "revenue": 5000.0, "cash": 3000.0, "total_debt": 7000.0, "ebitda": 1400.0},
+                {"ticker": "B", "company_name": "B Co", "sector": "Industrials", "enterprise_value": 8000.0, "revenue": 2200.0, "cash": 400.0, "total_debt": 3000.0, "ebitda": 450.0},
+            ]
+        )
+        peers = pd.DataFrame([{"ticker": "A"}])
+        out = build_buyer_universe(target, metrics, peers)
+        self.assertGreaterEqual(out.summary["buyer_count"], 1)
+        self.assertIn("buyer_score", out.buyer_table.columns)
+
+    def test_risk_gate(self) -> None:
+        target = pd.Series({"enterprise_value": 1000.0})
+        out = run_deal_risk_gate(
+            target_row=target,
+            comps_summary={"peer_count": 4},
+            precedents_summary={"transaction_count": 5},
+            dcf_summary={"dcf_gap_to_current": 0.5},
+            quality_score=60.0,
+            validation_summary={"validation_score": 55.0},
+            sensitivity_summary={"probability_band_p10": 400.0, "probability_band_p50": 1000.0},
+        )
+        self.assertIn(out.summary["overall_gate"], {"green", "amber", "red"})
+        self.assertIn("gate", out.gate_table.columns)
+
+    def test_negotiation_playbook(self) -> None:
+        target = pd.Series({"enterprise_value": 1000.0})
+        out = build_negotiation_playbook(
+            target_row=target,
+            blended_summary={"blended_implied_ev": 1150.0},
+            precedents_summary={"valuation_range_low": 980.0, "valuation_range_high": 1280.0},
+            sensitivity_summary={"probability_band_p10": 800.0, "probability_band_p50": 1100.0, "probability_band_p90": 1400.0},
+        )
+        self.assertIsNotNone(out.summary["walk_away_ev"])
+        self.assertIn("term", out.playbook_table.columns)
 
     def test_contract_validation_fallback_or_pass(self) -> None:
         metrics = pd.DataFrame([{"ticker": "AAA", "revenue": 100.0, "ebitda": 20.0, "enterprise_value": 350.0}])
