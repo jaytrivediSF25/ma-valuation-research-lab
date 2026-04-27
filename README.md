@@ -432,6 +432,7 @@ The repository now includes all major enterprise upgrades:
 15. Buyer universe scoring with strategic and financial buyer ranking via `deal_pipeline/strategic.py`
 16. Deal risk gating with red amber green hard checks via `deal_pipeline/strategic.py`
 17. Negotiation playbook generation with opening bid walk away and stretch terms via `deal_pipeline/strategic.py`
+18. Arsenal50 execution matrix with 50 tactical checks and readiness scoring via `deal_pipeline/arsenal50.py`
 
 ---
 

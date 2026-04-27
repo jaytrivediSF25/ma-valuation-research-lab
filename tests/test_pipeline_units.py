@@ -25,6 +25,7 @@ from deal_pipeline.scenarios import build_valuation_scenarios
 from deal_pipeline.sector_packs import apply_sector_pack
 from deal_pipeline.sensitivity import run_full_sensitivity
 from deal_pipeline.strategic import build_buyer_universe, build_negotiation_playbook, run_deal_risk_gate
+from deal_pipeline.arsenal50 import run_arsenal50
 from deal_pipeline.validation import run_model_validation_suite
 
 
@@ -328,6 +329,23 @@ class PipelineUnitTests(unittest.TestCase):
         )
         self.assertIsNotNone(out.summary["walk_away_ev"])
         self.assertIn("term", out.playbook_table.columns)
+
+    def test_arsenal50(self) -> None:
+        target = pd.Series({"enterprise_value": 1000.0, "ebitda_margin": 0.2, "revenue_growth_yoy": 0.1, "total_debt": 300.0, "cash": 100.0, "ev_revenue": 3.0})
+        out = run_arsenal50(
+            target_row=target,
+            comps_summary={"peer_count": 10, "percentile_ev_ebitda": 0.6},
+            precedents_summary={"transaction_count": 12, "valuation_range_low": 900.0, "valuation_range_high": 1250.0, "p75_ev_ebitda": 14.0, "p75_ev_revenue": 4.2, "median_ev_revenue": 3.6},
+            dcf_summary={"dcf_gap_to_current": 0.2},
+            quality_score=82.0,
+            validation_summary={"validation_score": 80.0, "validation_warn_count": 1},
+            sensitivity_summary={"probability_band_p10": 800.0, "probability_band_p50": 1000.0, "probability_band_p90": 1300.0},
+            buyer_universe_summary={"top_buyer_score": 0.8},
+            negotiation_summary={"opening_bid_ev": 980.0, "walk_away_ev": 1120.0, "stretch_ev": 1280.0},
+            risk_gate_summary={"overall_gate": "green"},
+        )
+        self.assertEqual(out.summary["arsenal_idea_count"], 50)
+        self.assertIn("idea_id", out.arsenal_table.columns)
 
     def test_contract_validation_fallback_or_pass(self) -> None:
         metrics = pd.DataFrame([{"ticker": "AAA", "revenue": 100.0, "ebitda": 20.0, "enterprise_value": 350.0}])

@@ -32,6 +32,7 @@ from .scenarios import build_valuation_scenarios
 from .sector_packs import apply_sector_pack
 from .sensitivity import run_full_sensitivity
 from .strategic import build_buyer_universe, build_negotiation_playbook, run_deal_risk_gate
+from .arsenal50 import run_arsenal50
 from .validation import run_model_validation_suite
 
 
@@ -131,6 +132,19 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
             precedents_summary=precedents.summary,
             sensitivity_summary=sensitivity.summary,
         )
+    with obs.timed("arsenal50"):
+        arsenal = run_arsenal50(
+            target_row=target_row,
+            comps_summary=comps.summary,
+            precedents_summary=precedents.summary,
+            dcf_summary=dcf.summary,
+            quality_score=quality.score,
+            validation_summary=validation.summary,
+            sensitivity_summary=sensitivity.summary,
+            buyer_universe_summary=buyer_universe.summary,
+            negotiation_summary=negotiation.summary,
+            risk_gate_summary=risk_gate.summary,
+        )
     with obs.timed("lineage"):
         lineage = build_lineage_report(
             target_row=target_row,
@@ -198,6 +212,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "buyer_universe": buyer_universe.summary,
         "risk_gate": risk_gate.summary,
         "negotiation_playbook": negotiation.summary,
+        "arsenal50": arsenal.summary,
     }
     insights_raw = generate_ai_insights(structured_payload, config.openai_model)
     evidence = apply_evidence_citations(insights_raw)
@@ -248,6 +263,8 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "top_buyer": buyer_universe.summary.get("top_buyer"),
         "risk_gate_overall": risk_gate.summary.get("overall_gate"),
         "negotiation_walk_away_ev": negotiation.summary.get("walk_away_ev"),
+        "arsenal_idea_count": arsenal.summary.get("arsenal_idea_count"),
+        "arsenal_readiness_pct": arsenal.summary.get("arsenal_readiness_pct"),
     }
 
     exports = export_outputs(
@@ -281,6 +298,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         buyer_universe_summary=buyer_universe.summary,
         risk_gate_summary=risk_gate.summary,
         negotiation_summary=negotiation.summary,
+        arsenal_summary=arsenal.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -307,6 +325,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         buyer_universe_table=buyer_universe.buyer_table,
         risk_gate_table=risk_gate.gate_table,
         negotiation_table=negotiation.playbook_table,
+        arsenal_table=arsenal.arsenal_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,
     )
