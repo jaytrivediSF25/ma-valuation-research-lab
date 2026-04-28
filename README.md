@@ -435,6 +435,7 @@ The repository now includes all major enterprise upgrades:
 18. Arsenal50 execution matrix with 50 tactical checks and readiness scoring via `deal_pipeline/arsenal50.py`
 19. Arsenal300 execution matrix with 300 large scale initiatives and theme level risk surfacing via `deal_pipeline/arsenal300.py`
 20. Arsenal600 execution matrix with 600 major domain initiatives and critical severity tracking via `deal_pipeline/arsenal600.py`
+21. Massive arsenal execution matrix at 300000 scale with bounded workbook export and full CSV artifact via `deal_pipeline/arsenal_massive.py`
 
 ---
 

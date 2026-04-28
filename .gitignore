@@ -22,3 +22,4 @@ output/cache/
 output/warehouse/
 output/enterprise/
 output/event_delta_report.json
+output/arsenal_massive_full.csv

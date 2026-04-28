@@ -78,6 +78,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--disable-pandera-validation", action="store_true", help="Disable Pandera-based contract checks")
     parser.add_argument("--disable-blend-optimizer", action="store_true", help="Disable optimization step in blended valuation weights")
     parser.add_argument("--disable-enterprise-suite", action="store_true", help="Disable enterprise expansion suite modules")
+    parser.add_argument("--disable-arsenal-massive", action="store_true", help="Disable 300000-scale arsenal layer")
+    parser.add_argument("--arsenal-massive-idea-count", type=int, default=300000, help="Initiative count for massive arsenal layer")
     parser.add_argument(
         "--disable-markdown-memo",
         action="store_true",
@@ -145,6 +147,8 @@ def main() -> None:
         enable_pandera_validation=not args.disable_pandera_validation,
         enable_blend_optimizer=not args.disable_blend_optimizer,
         enable_enterprise_suite=not args.disable_enterprise_suite,
+        enable_arsenal_massive=not args.disable_arsenal_massive,
+        arsenal_massive_idea_count=args.arsenal_massive_idea_count,
         enable_markdown_memo=not args.disable_markdown_memo,
     )
 

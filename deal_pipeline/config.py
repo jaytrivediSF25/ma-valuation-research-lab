@@ -65,6 +65,8 @@ class PipelineConfig:
     enable_pandera_validation: bool = True
     enable_blend_optimizer: bool = True
     enable_enterprise_suite: bool = True
+    enable_arsenal_massive: bool = True
+    arsenal_massive_idea_count: int = 300000
 
     def ensure_directories(self) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)

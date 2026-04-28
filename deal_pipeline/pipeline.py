@@ -35,6 +35,7 @@ from .strategic import build_buyer_universe, build_negotiation_playbook, run_dea
 from .arsenal50 import run_arsenal50
 from .arsenal300 import run_arsenal300
 from .arsenal600 import run_arsenal600
+from .arsenal_massive import run_arsenal_massive
 from .validation import run_model_validation_suite
 
 
@@ -175,6 +176,29 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
             risk_gate_summary=risk_gate.summary,
             arsenal300_summary=arsenal300.summary,
         )
+    if config.enable_arsenal_massive:
+        with obs.timed("arsenal_massive"):
+            arsenal_massive = run_arsenal_massive(
+                idea_count=config.arsenal_massive_idea_count,
+                comps_summary=comps.summary,
+                precedents_summary=precedents.summary,
+                validation_summary=validation.summary,
+                sensitivity_summary=sensitivity.summary,
+                risk_gate_summary=risk_gate.summary,
+            )
+    else:
+        from .arsenal_massive import ArsenalMassiveResult
+        arsenal_massive = ArsenalMassiveResult(
+            summary={
+                "arsenal_massive_idea_count": 0,
+                "arsenal_massive_pass_count": 0,
+                "arsenal_massive_watch_count": 0,
+                "arsenal_massive_critical_count": 0,
+                "arsenal_massive_readiness_pct": 0.0,
+                "arsenal_massive_top_risk_domain": None,
+            },
+            arsenal_table=pd.DataFrame(),
+        )
     with obs.timed("lineage"):
         lineage = build_lineage_report(
             target_row=target_row,
@@ -245,6 +269,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "arsenal50": arsenal.summary,
         "arsenal300": arsenal300.summary,
         "arsenal600": arsenal600.summary,
+        "arsenal_massive": arsenal_massive.summary,
     }
     insights_raw = generate_ai_insights(structured_payload, config.openai_model)
     evidence = apply_evidence_citations(insights_raw)
@@ -303,6 +328,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "arsenal600_idea_count": arsenal600.summary.get("arsenal600_idea_count"),
         "arsenal600_readiness_pct": arsenal600.summary.get("arsenal600_readiness_pct"),
         "arsenal600_top_risk_domain": arsenal600.summary.get("arsenal600_top_risk_domain"),
+        "arsenal_massive_idea_count": arsenal_massive.summary.get("arsenal_massive_idea_count"),
+        "arsenal_massive_readiness_pct": arsenal_massive.summary.get("arsenal_massive_readiness_pct"),
+        "arsenal_massive_top_risk_domain": arsenal_massive.summary.get("arsenal_massive_top_risk_domain"),
     }
 
     exports = export_outputs(
@@ -339,6 +367,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         arsenal_summary=arsenal.summary,
         arsenal300_summary=arsenal300.summary,
         arsenal600_summary=arsenal600.summary,
+        arsenal_massive_summary=arsenal_massive.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -368,9 +397,15 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         arsenal_table=arsenal.arsenal_table,
         arsenal300_table=arsenal300.arsenal_table,
         arsenal600_table=arsenal600.arsenal_table,
+        arsenal_massive_table=arsenal_massive.arsenal_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,
     )
+
+    if config.enable_arsenal_massive and not arsenal_massive.arsenal_table.empty:
+        massive_csv = config.output_dir / "arsenal_massive_full.csv"
+        arsenal_massive.arsenal_table.to_csv(massive_csv, index=False)
+        diagnostic["arsenal_massive_csv"] = str(massive_csv)
 
     if config.enable_duckdb_store:
         duckdb_path = config.duckdb_path or (config.output_dir / "warehouse" / "deal_pipeline.duckdb")
