@@ -34,6 +34,7 @@ from .sensitivity import run_full_sensitivity
 from .strategic import build_buyer_universe, build_negotiation_playbook, run_deal_risk_gate
 from .arsenal50 import run_arsenal50
 from .arsenal300 import run_arsenal300
+from .arsenal600 import run_arsenal600
 from .validation import run_model_validation_suite
 
 
@@ -160,6 +161,20 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
             risk_gate_summary=risk_gate.summary,
             arsenal50_summary=arsenal.summary,
         )
+    with obs.timed("arsenal600"):
+        arsenal600 = run_arsenal600(
+            target_row=target_row,
+            comps_summary=comps.summary,
+            precedents_summary=precedents.summary,
+            dcf_summary=dcf.summary,
+            quality_score=quality.score,
+            validation_summary=validation.summary,
+            sensitivity_summary=sensitivity.summary,
+            buyer_universe_summary=buyer_universe.summary,
+            negotiation_summary=negotiation.summary,
+            risk_gate_summary=risk_gate.summary,
+            arsenal300_summary=arsenal300.summary,
+        )
     with obs.timed("lineage"):
         lineage = build_lineage_report(
             target_row=target_row,
@@ -229,6 +244,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "negotiation_playbook": negotiation.summary,
         "arsenal50": arsenal.summary,
         "arsenal300": arsenal300.summary,
+        "arsenal600": arsenal600.summary,
     }
     insights_raw = generate_ai_insights(structured_payload, config.openai_model)
     evidence = apply_evidence_citations(insights_raw)
@@ -284,6 +300,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "arsenal300_idea_count": arsenal300.summary.get("arsenal300_idea_count"),
         "arsenal300_readiness_pct": arsenal300.summary.get("arsenal300_readiness_pct"),
         "arsenal300_top_risk_theme": arsenal300.summary.get("arsenal300_top_risk_theme"),
+        "arsenal600_idea_count": arsenal600.summary.get("arsenal600_idea_count"),
+        "arsenal600_readiness_pct": arsenal600.summary.get("arsenal600_readiness_pct"),
+        "arsenal600_top_risk_domain": arsenal600.summary.get("arsenal600_top_risk_domain"),
     }
 
     exports = export_outputs(
@@ -319,6 +338,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         negotiation_summary=negotiation.summary,
         arsenal_summary=arsenal.summary,
         arsenal300_summary=arsenal300.summary,
+        arsenal600_summary=arsenal600.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -347,6 +367,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         negotiation_table=negotiation.playbook_table,
         arsenal_table=arsenal.arsenal_table,
         arsenal300_table=arsenal300.arsenal_table,
+        arsenal600_table=arsenal600.arsenal_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,
     )
