@@ -29,6 +29,7 @@ from deal_pipeline.arsenal50 import run_arsenal50
 from deal_pipeline.arsenal300 import run_arsenal300
 from deal_pipeline.arsenal600 import run_arsenal600
 from deal_pipeline.arsenal_massive import run_arsenal_massive
+from deal_pipeline.arsenal_extra50 import run_arsenal_extra50
 from deal_pipeline.validation import run_model_validation_suite
 
 
@@ -397,6 +398,17 @@ class PipelineUnitTests(unittest.TestCase):
         )
         self.assertEqual(out.summary["arsenal_massive_idea_count"], 5000)
         self.assertIn("initiative_id", out.arsenal_table.columns)
+
+    def test_arsenal_extra50(self) -> None:
+        out = run_arsenal_extra50(
+            comps_summary={"peer_count": 10},
+            precedents_summary={"transaction_count": 12},
+            validation_summary={"validation_score": 80.0},
+            risk_gate_summary={"warn_count": 1},
+            arsenal_massive_summary={"arsenal_massive_readiness_pct": 0.7},
+        )
+        self.assertEqual(out.summary["arsenal_extra50_idea_count"], 50)
+        self.assertIn("track", out.arsenal_table.columns)
 
     def test_contract_validation_fallback_or_pass(self) -> None:
         metrics = pd.DataFrame([{"ticker": "AAA", "revenue": 100.0, "ebitda": 20.0, "enterprise_value": 350.0}])

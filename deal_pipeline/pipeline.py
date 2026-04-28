@@ -36,6 +36,7 @@ from .arsenal50 import run_arsenal50
 from .arsenal300 import run_arsenal300
 from .arsenal600 import run_arsenal600
 from .arsenal_massive import run_arsenal_massive
+from .arsenal_extra50 import run_arsenal_extra50
 from .validation import run_model_validation_suite
 
 
@@ -199,6 +200,14 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
             },
             arsenal_table=pd.DataFrame(),
         )
+    with obs.timed("arsenal_extra50"):
+        arsenal_extra50 = run_arsenal_extra50(
+            comps_summary=comps.summary,
+            precedents_summary=precedents.summary,
+            validation_summary=validation.summary,
+            risk_gate_summary=risk_gate.summary,
+            arsenal_massive_summary=arsenal_massive.summary,
+        )
     with obs.timed("lineage"):
         lineage = build_lineage_report(
             target_row=target_row,
@@ -270,6 +279,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "arsenal300": arsenal300.summary,
         "arsenal600": arsenal600.summary,
         "arsenal_massive": arsenal_massive.summary,
+        "arsenal_extra50": arsenal_extra50.summary,
     }
     insights_raw = generate_ai_insights(structured_payload, config.openai_model)
     evidence = apply_evidence_citations(insights_raw)
@@ -331,6 +341,8 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         "arsenal_massive_idea_count": arsenal_massive.summary.get("arsenal_massive_idea_count"),
         "arsenal_massive_readiness_pct": arsenal_massive.summary.get("arsenal_massive_readiness_pct"),
         "arsenal_massive_top_risk_domain": arsenal_massive.summary.get("arsenal_massive_top_risk_domain"),
+        "arsenal_extra50_idea_count": arsenal_extra50.summary.get("arsenal_extra50_idea_count"),
+        "arsenal_extra50_readiness_pct": arsenal_extra50.summary.get("arsenal_extra50_readiness_pct"),
     }
 
     exports = export_outputs(
@@ -368,6 +380,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         arsenal300_summary=arsenal300.summary,
         arsenal600_summary=arsenal600.summary,
         arsenal_massive_summary=arsenal_massive.summary,
+        arsenal_extra50_summary=arsenal_extra50.summary,
         insights=insights,
         comps_table=comps.peer_table,
         precedents_table=precedents.precedent_table,
@@ -398,6 +411,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineRunResult:
         arsenal300_table=arsenal300.arsenal_table,
         arsenal600_table=arsenal600.arsenal_table,
         arsenal_massive_table=arsenal_massive.arsenal_table,
+        arsenal_extra50_table=arsenal_extra50.arsenal_table,
         raw_data_table=normalized.raw_data_export,
         diagnostics=diagnostic,
     )

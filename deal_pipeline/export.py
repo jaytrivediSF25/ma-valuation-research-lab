@@ -83,6 +83,7 @@ def _build_summary_sheet(
     arsenal300_summary: Optional[Dict[str, Any]],
     arsenal600_summary: Optional[Dict[str, Any]],
     arsenal_massive_summary: Optional[Dict[str, Any]],
+    arsenal_extra50_summary: Optional[Dict[str, Any]],
     insights: Dict[str, Any],
 ) -> pd.DataFrame:
     rows = [
@@ -166,6 +167,9 @@ def _build_summary_sheet(
         ("arsenal_massive_pass_count", (arsenal_massive_summary or {}).get("arsenal_massive_pass_count")),
         ("arsenal_massive_readiness_pct", (arsenal_massive_summary or {}).get("arsenal_massive_readiness_pct")),
         ("arsenal_massive_top_risk_domain", (arsenal_massive_summary or {}).get("arsenal_massive_top_risk_domain")),
+        ("arsenal_extra50_idea_count", (arsenal_extra50_summary or {}).get("arsenal_extra50_idea_count")),
+        ("arsenal_extra50_pass_count", (arsenal_extra50_summary or {}).get("arsenal_extra50_pass_count")),
+        ("arsenal_extra50_readiness_pct", (arsenal_extra50_summary or {}).get("arsenal_extra50_readiness_pct")),
         ("primary_risk", insights.get("primary_risk")),
         ("conclusion", insights.get("conclusion")),
     ]
@@ -205,6 +209,7 @@ def export_outputs(
     arsenal300_summary: Optional[Dict[str, Any]],
     arsenal600_summary: Optional[Dict[str, Any]],
     arsenal_massive_summary: Optional[Dict[str, Any]],
+    arsenal_extra50_summary: Optional[Dict[str, Any]],
     insights: Dict[str, Any],
     comps_table: pd.DataFrame,
     precedents_table: pd.DataFrame,
@@ -235,6 +240,7 @@ def export_outputs(
     arsenal300_table: Optional[pd.DataFrame],
     arsenal600_table: Optional[pd.DataFrame],
     arsenal_massive_table: Optional[pd.DataFrame],
+    arsenal_extra50_table: Optional[pd.DataFrame],
     raw_data_table: pd.DataFrame,
     diagnostics: Dict[str, Any],
 ) -> ExportArtifacts:
@@ -324,6 +330,7 @@ def export_outputs(
         arsenal300_summary=arsenal300_summary,
         arsenal600_summary=arsenal600_summary,
         arsenal_massive_summary=arsenal_massive_summary,
+        arsenal_extra50_summary=arsenal_extra50_summary,
         insights=insights,
     )
 
@@ -369,6 +376,8 @@ def export_outputs(
             arsenal600_table.to_excel(writer, index=False, sheet_name="arsenal600")
         if arsenal_massive_table is not None and not arsenal_massive_table.empty:
             arsenal_massive_table.head(5000).to_excel(writer, index=False, sheet_name="arsenal_massive")
+        if arsenal_extra50_table is not None and not arsenal_extra50_table.empty:
+            arsenal_extra50_table.to_excel(writer, index=False, sheet_name="arsenal_extra50")
         raw_for_excel.to_excel(writer, index=False, sheet_name="raw_data")
 
     return ExportArtifacts(
